@@ -2,7 +2,7 @@ pragma Ada_2022;
 
 --  hello_world.adb with the four structured logging hooks wired in: On_Event,
 --  On_Guard, On_Action and On_Unhandled.  Each is gated on Trace_Config.Enabled
---  (set by the TRACE scenario, cfg/on vs cfg/off) so CI builds it both ways;
+--  (on in the debug profile, compiled out in release) so it builds both ways;
 --  when off, the message-building folds away and tracing costs nothing.  See
 --  hello_world.adb for the same machine with no logging.
 
@@ -71,7 +71,7 @@ procedure Hello_World_With_Tracing is
    end Execute;
 
    --  Opt-in structured logging.  Each hook is gated on Trace_Config.Enabled
-   --  (set by the TRACE scenario) so CI builds this both ways; when off, the
+   --  (the debug profile turns it on, release compiles it out); when off, the
    --  message-building folds away and tracing costs nothing.
    procedure On_Event (Evt : Event_Kind; From : State) is
    begin

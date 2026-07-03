@@ -2,18 +2,20 @@ with "../sml.gpr";
 
 project Example is
 
-   --  TRACE picks the Trace_Config package (cfg/on or cfg/off) that sets the
-   --  example's Debug actual, so the example can be built both ways.
-   type Trace_Mode is ("on", "off");
-   Trace : Trace_Mode := external ("TRACE", "off");
+   --  MODE selects a build profile:
+   --    release  -O3, tracing off  (Trace_Config from cfg/release)
+   --    debug    -O0, tracing on   (Trace_Config from cfg/debug)
+   --  It drives the source, object and exec dirs and the compiler switches.
+   type Mode_Type is ("release", "debug");
+   Mode : Mode_Type := external ("MODE", "release");
 
-   for Source_Dirs use ("src", "cfg/" & Trace);
-   --  Per-mode object and exec dirs (obj/<mode>, bin/<mode>) so switching TRACE
+   --  Per-mode object and exec dirs (obj/<mode>, bin/<mode>) so switching MODE
    --  never reuses stale artifacts -- gprbuild's incremental build can miss the
-   --  cfg/on <-> cfg/off source-dir swap, so without this a rebuild after a
-   --  switch needs a manual clean.
-   for Object_Dir use "obj/" & Trace;
-   for Exec_Dir use "bin/" & Trace;
+   --  cfg/release <-> cfg/debug source-dir swap, so without this a rebuild
+   --  after a switch needs a manual clean.
+   for Source_Dirs use ("src", "cfg/" & Mode);
+   for Object_Dir use "obj/" & Mode;
+   for Exec_Dir use "bin/" & Mode;
    for Main use
      ("hello_world.adb",
       "hello_world_with_tracing.adb",
@@ -24,9 +26,20 @@ project Example is
       "composite_states.adb",
       "bundled_context.adb");
 
+   package Builder is
+      for Switches ("Ada") use ("-j0");   --  build on all cores
+   end Builder;
+
    package Compiler is
-      for Default_Switches ("Ada") use
-        ("-g", "-gnata", "-gnatwa", "-gnatwe", "-gnat2022");
+      Common := ("-g", "-gnata", "-gnatwa", "-gnatwe", "-gnat2022");
+
+      case Mode is
+         when "release" =>
+            for Default_Switches ("Ada") use Common & ("-O3");
+
+         when "debug" =>
+            for Default_Switches ("Ada") use Common & ("-O0");
+      end case;
    end Compiler;
 
 end Example;

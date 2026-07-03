@@ -294,12 +294,13 @@ package SM is new Sml.Machines (..., On_Event => On_Event, ...);
 ```
 
 Because the hook is a real procedure, *you* decide the format, where it goes,
-and when it's active — gating on a static `Boolean` (as `hello_world_with_tracing`
-does) folds disabled tracing away to nothing even at `-O0`. The plain
-`hello_world` omits the hooks entirely; build the traced variant to see them:
+and when it's active — `hello_world_with_tracing` gates it on a static `Boolean`,
+so a build with tracing off drops it entirely (the front end eliminates the
+static branch, no optimizer needed). The plain `hello_world` omits the hooks; the
+`debug` profile turns them on:
 
 ```console
-$ alr exec -- gprbuild -p -XTRACE=on -P example/example.gpr && ./example/bin/on/hello_world_with_tracing
+$ make run-trace     # or: alr exec -- gprbuild -p -XMODE=debug -P example/example.gpr && ./example/bin/debug/hello_world_with_tracing
 start: ESTABLISHED
 [trace]event E_RELEASE in state ESTABLISHED
 [trace]  guard ALWAYS => TRUE
@@ -352,13 +353,21 @@ already uses — left out to keep the crate to its verified library core.
 
 ## Building, testing, proving, formatting
 
+A `Makefile` wraps the common flows — each target just runs the underlying `alr`
+command, and `make help` lists them all:
+
 ```console
-alr build                                   # build the library
-alr test                                    # build + run the AUnit suite
-alr exec -- gnatprove -P proof/proof.gpr    # run the SPARK proof
-alr exec -- gprbuild -p -P example/example.gpr && ./example/bin/off/hello_world
-gnatformat --check src/*.ad? tests/src/*.ad? example/src/*.ad? proof/src/*.ad?
+make build     # build the library
+make test      # build + run the AUnit suite
+make prove     # run the SPARK proof
+make run       # build the example (release: -O3, no tracing) and run hello_world
+make format    # check formatting
 ```
+
+The example builds in two profiles: `release` (`-O3`, tracing off, the default)
+and `debug` (`-O0`, tracing on) — `make debug` / `make run-trace` use the latter.
+Each profile builds on all cores (`-j0`) into its own `bin/<profile>` and
+`obj/<profile>`, so switching profiles never needs a clean.
 
 Transition tables are wrapped in `--!format off`/`--!format on` so `gnatformat`
 keeps their hand-aligned columns.

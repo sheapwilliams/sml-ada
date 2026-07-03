@@ -42,17 +42,13 @@ jobs:
         # the machine both with and without tracing, so both compile here too.
         run: alr --non-interactive test
 
-      - name: Build & run the example without tracing
-        run: |
-          alr exec -- gprbuild -p -XTRACE=off -P example/example.gpr
-          ./example/bin/off/hello_world
+      - name: Build & run the release example (-O3, no tracing)
+        run: make run
 
-      - name: Build & run the example with tracing
-        # Per-mode build dirs (bin/<mode>) mean no clean is needed between the
-        # off and on builds; the traced binary lives in bin/on.
-        run: |
-          alr exec -- gprbuild -p -XTRACE=on -P example/example.gpr
-          ./example/bin/on/hello_world_with_tracing
+      - name: Build & run the debug example (-O0, tracing)
+        # Per-profile build dirs (bin/<profile>) mean no clean is needed between
+        # the release and debug builds.
+        run: make run-trace
 
   proof:
     name: SPARK proof

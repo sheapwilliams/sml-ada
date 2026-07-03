@@ -1,0 +1,55 @@
+# Thin wrapper around Alire + gprbuild so the common flows are one word.  Every
+# target runs through `alr` (so the aunit/gnatprove dependencies resolve).  The
+# example builds on all cores (-j0, set in example/example.gpr) and has two
+# profiles: release (-O3, tracing off) and debug (-O0, tracing on).
+
+EX := -P example/example.gpr
+
+.PHONY: all build test prove format example release debug run run-trace clean help
+
+all: build
+
+## build       Build the library
+build:
+	alr build
+
+## test        Build and run the AUnit suite
+test:
+	alr --non-interactive test
+
+## prove       Run the SPARK proof
+prove:
+	alr exec -- gnatprove -j0 -P proof/proof.gpr
+
+## format      Check source formatting
+format:
+	alr exec -- gnatformat --check src/*.ad? tests/src/*.ad? example/src/*.ad? proof/src/*.ad?
+
+## example     Build the example both ways
+example: release debug
+
+## release     Build the example (-O3, tracing off)
+release:
+	alr exec -- gprbuild -p -XMODE=release $(EX)
+
+## debug       Build the example (-O0, tracing on)
+debug:
+	alr exec -- gprbuild -p -XMODE=debug $(EX)
+
+## run         Build and run the release hello_world
+run: release
+	./example/bin/release/hello_world
+
+## run-trace   Build and run the debug hello_world_with_tracing
+run-trace: debug
+	./example/bin/debug/hello_world_with_tracing
+
+## clean       Remove all build artifacts
+clean:
+	-alr exec -- gprclean -XMODE=release $(EX)
+	-alr exec -- gprclean -XMODE=debug $(EX)
+	alr clean
+
+## help        List targets
+help:
+	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/^## /  /'
