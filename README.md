@@ -260,7 +260,8 @@ B.Process_Event (Obj, (Kind => Go));   --  no Context argument
 `Instance` holds the machine and its `Context` together; both components stay
 visible, so `Obj.Ctx` is read and written directly, just as an explicit context
 would be. It's opt-in — the core engine still keeps `Context` external for the
-shared-context cases — and `Instance` is limited only when your `Context` is.
+shared-context cases — and `Instance` is limited only when your `Context` is. See
+`example/bundled_context.adb`.
 
 ### Completeness & unhandled events
 

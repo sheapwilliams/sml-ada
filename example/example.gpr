@@ -16,7 +16,8 @@ project Example is
       "orthogonal_regions.adb",
       "run_to_completion.adb",
       "deferred_events.adb",
-      "composite_states.adb");
+      "composite_states.adb",
+      "bundled_context.adb");
 
    package Compiler is
       for Default_Switches ("Ada") use
