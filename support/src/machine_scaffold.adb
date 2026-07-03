@@ -1,4 +1,4 @@
-package body Proof_Scaffold
+package body Machine_Scaffold
   with SPARK_Mode
 is
 
@@ -11,4 +11,4 @@ is
       return True;
    end Evaluate;
 
-end Proof_Scaffold;
+end Machine_Scaffold;

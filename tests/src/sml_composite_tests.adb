@@ -1,5 +1,6 @@
 with AUnit.Assertions; use AUnit.Assertions;
 
+with Machine_Scaffold;
 with Sml.Machines;
 with Sml.Machines.Composite;
 
@@ -12,47 +13,24 @@ package body Sml_Composite_Tests is
    --  composite routes each to the right level.  E_Nop is handled by neither.
    type Event_Kind is (E_Power, E_Tick, E_Nop);
 
-   type Event is record
-      Kind : Event_Kind;
-   end record;
-
-   type Null_Ctx is null record;
-   type G is (Always);
-   type A is (Nothing);
-
-   function Kind_Of (E : Event) return Event_Kind
-   is (E.Kind);
-
-   function Evaluate (Gk : G; C : Null_Ctx; E : Event) return Boolean is
-      pragma Unreferenced (Gk, C, E);
-   begin
-      return True;
-   end Evaluate;
-
-   procedure Execute (Ak : A; C : in out Null_Ctx; E : Event) is null;
-
    type P_St is (Off, On);
-   package Parent_SM is new
-     Sml.Machines
-       (P_St,
-        Event_Kind,
-        Event,
-        Null_Ctx,
-        G,
-        A,
-        Kind_Of,
-        Evaluate,
-        Execute);
 
+   package Scaffold is new Machine_Scaffold (P_St, Event_Kind);
+   package Parent_SM renames Scaffold.SM;
+   use Scaffold;
+
+   --  Composite requires parent and child to share Event and Context, so the
+   --  child machine reuses the scaffold's kit; only its State differs.
    type C_St is (Low, High);
+
    package Child_SM is new
      Sml.Machines
        (C_St,
         Event_Kind,
         Event,
-        Null_Ctx,
-        G,
-        A,
+        Context,
+        Guard_Kind,
+        Action_Kind,
         Kind_Of,
         Evaluate,
         Execute);
@@ -71,7 +49,7 @@ package body Sml_Composite_Tests is
    Child : Child_SM.Machine := Child_SM.Make (Child_Table, Initial => Low);
 
    procedure Process_Child
-     (Ctx : in out Null_Ctx; Evt : Event; Handled : out Boolean) is
+     (Ctx : in out Context; Evt : Event; Handled : out Boolean) is
    begin
       Child_SM.Process_Event (Child, Ctx, Evt, Handled);
    end Process_Child;
@@ -82,7 +60,7 @@ package body Sml_Composite_Tests is
       pragma Unreferenced (T);
       Parent : Parent_SM.Machine :=
         Parent_SM.Make (Parent_Table, Initial => Off);
-      C      : Null_Ctx;
+      C      : Context;
    begin
       Child := Child_SM.Make (Child_Table, Initial => Low);
 
@@ -108,7 +86,7 @@ package body Sml_Composite_Tests is
       pragma Unreferenced (T);
       Parent  : Parent_SM.Machine :=
         Parent_SM.Make (Parent_Table, Initial => Off);
-      C       : Null_Ctx;
+      C       : Context;
       Handled : Boolean;
    begin
       Child := Child_SM.Make (Child_Table, Initial => Low);

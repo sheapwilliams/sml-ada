@@ -91,7 +91,7 @@ jobs:
         # Tables are wrapped in --!format off/on, so their alignment is kept.
         run: |
           files=$(git ls-files 'src/*.ad[sb]' 'tests/src/*.ad[sb]' \
-                               'proof/src/*.ad[sb]' 'example/src/*.ad[sb]' \
-                               'example/cfg/*.ad[sb]')
+                               'proof/src/*.ad[sb]' 'support/src/*.ad[sb]' \
+                               'example/src/*.ad[sb]' 'example/cfg/*.ad[sb]')
           echo "Checking:"; echo "$files"
           gnatformat --no-project --check $files

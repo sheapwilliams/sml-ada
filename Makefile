@@ -28,7 +28,7 @@ format:
 	alr exec -- gnatformat -P tests/test_sml.gpr --check $$(git ls-files 'tests/src/*.ad[sb]')
 	alr exec -- gnatformat -P example/example.gpr --check $$(git ls-files 'example/src/*.ad[sb]' 'example/cfg/release/*.ad[sb]')
 	alr exec -- gnatformat -P example/example.gpr -XMODE=debug --check $$(git ls-files 'example/cfg/debug/*.ad[sb]')
-	alr exec -- gnatformat -P proof/proof.gpr --check $$(git ls-files 'proof/src/*.ad[sb]')
+	alr exec -- gnatformat -P proof/proof.gpr --check $$(git ls-files 'proof/src/*.ad[sb]' 'support/src/*.ad[sb]')
 
 ## example     Build the example both ways
 example: release debug

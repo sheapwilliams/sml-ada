@@ -3,7 +3,7 @@
 --  Unhandled_Event).  The child here is a trivial "never handles" stand-in --
 --  enough to analyse Process's body; real delegation is exercised by the tests.
 
-with Proof_Scaffold;
+with Machine_Scaffold;
 with Sml.Machines.Composite;
 
 package Composite_Proof
@@ -13,7 +13,7 @@ is
    type State is (Off, On);
    type Event_Kind is (E_Power);
 
-   package Scaffold is new Proof_Scaffold (State, Event_Kind);
+   package Scaffold is new Machine_Scaffold (State, Event_Kind);
    use Scaffold;
 
    procedure No_Child

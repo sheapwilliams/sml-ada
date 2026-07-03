@@ -3,7 +3,7 @@
 --  Broadcast is proved to propagate only Unhandled_Event.  (As elsewhere, a
 --  proof function does not call Broadcast, since it could raise by design.)
 
-with Proof_Scaffold;
+with Machine_Scaffold;
 with Sml.Machines.Regions;
 
 package Regions_Proof
@@ -13,7 +13,7 @@ is
    type State is (Off, On);
    type Event_Kind is (E_Toggle);
 
-   package Scaffold is new Proof_Scaffold (State, Event_Kind);
+   package Scaffold is new Machine_Scaffold (State, Event_Kind);
    use Scaffold;
 
    package Reg is new SM.Regions (Count => 2);

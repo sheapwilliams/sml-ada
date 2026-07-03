@@ -1,5 +1,6 @@
 with AUnit.Assertions; use AUnit.Assertions;
 
+with Machine_Scaffold;
 with Sml.Machines;
 with Sml.Machines.Reactive;
 
@@ -7,45 +8,18 @@ package body Sml_Reactive_Tests is
 
    use AUnit.Test_Cases.Registration;
 
-   type Null_Ctx is null record;
-   type G is (Always);
-   type A is (Nothing);
-
    --  Phone: dialling settles to Connected on its own via an entry event.
    type P_St is (Idle, Dialing, Connected);
    type P_Ev is (E_Dial, E_Connect);
 
-   type P_Event is record
-      Kind : P_Ev;
-   end record;
-
-   function P_Kind (E : P_Event) return P_Ev
-   is (E.Kind);
-
-   function P_Eval (Gk : G; C : Null_Ctx; E : P_Event) return Boolean is
-      pragma Unreferenced (Gk, C, E);
-   begin
-      return True;
-   end P_Eval;
-
-   procedure P_Exec (Ak : A; C : in out Null_Ctx; E : P_Event) is null;
-
-   package P_SM is new
-     Sml.Machines
-       (P_St,
-        P_Ev,
-        P_Event,
-        Null_Ctx,
-        G,
-        A,
-        P_Kind,
-        P_Eval,
-        P_Exec);
+   package P_Scaffold is new Machine_Scaffold (P_St, P_Ev);
+   package P_SM renames P_Scaffold.SM;
+   use P_Scaffold;
 
    function P_Has (S : P_St) return Boolean
    is (S = Dialing);
 
-   function P_Entry (S : P_St) return P_Event is
+   function P_Entry (S : P_St) return P_Scaffold.Event is
       pragma Unreferenced (S);
    begin
       return (Kind => E_Connect);
@@ -65,32 +39,9 @@ package body Sml_Reactive_Tests is
    type T_St is (Ping, Pong);
    type T_Ev is (E_Beat);
 
-   type T_Event is record
-      Kind : T_Ev;
-   end record;
-
-   function T_Kind (E : T_Event) return T_Ev
-   is (E.Kind);
-
-   function T_Eval (Gk : G; C : Null_Ctx; E : T_Event) return Boolean is
-      pragma Unreferenced (Gk, C, E);
-   begin
-      return True;
-   end T_Eval;
-
-   procedure T_Exec (Ak : A; C : in out Null_Ctx; E : T_Event) is null;
-
-   package T_SM is new
-     Sml.Machines
-       (T_St,
-        T_Ev,
-        T_Event,
-        Null_Ctx,
-        G,
-        A,
-        T_Kind,
-        T_Eval,
-        T_Exec);
+   package T_Scaffold is new Machine_Scaffold (T_St, T_Ev);
+   package T_SM renames T_Scaffold.SM;
+   use T_Scaffold;
 
    function T_Has (S : T_St) return Boolean is
       pragma Unreferenced (S);
@@ -98,7 +49,7 @@ package body Sml_Reactive_Tests is
       return True;
    end T_Has;
 
-   function T_Entry (S : T_St) return T_Event is
+   function T_Entry (S : T_St) return T_Scaffold.Event is
       pragma Unreferenced (S);
    begin
       return (Kind => E_Beat);
@@ -130,6 +81,7 @@ package body Sml_Reactive_Tests is
       Kind : NS_Ev;
    end record;
 
+   type G is (Always);
    type NS_A is (Nothing, Bump);
 
    function NS_Kind (E : NS_Event) return NS_Ev
@@ -183,7 +135,7 @@ package body Sml_Reactive_Tests is
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
-      C  : Null_Ctx;
+      C  : P_Scaffold.Context;
       M1 : P_SM.Machine := P_SM.Make (Phone, Initial => Idle);
       M2 : P_SM.Machine := P_SM.Make (Phone, Initial => Idle);
    begin
@@ -200,7 +152,7 @@ package body Sml_Reactive_Tests is
 
    procedure Test_Bounded (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
-      C : Null_Ctx;
+      C : T_Scaffold.Context;
       M : T_SM.Machine := T_SM.Make (Toggle, Initial => Ping);
    begin
       --  A cyclic entry-event chain: this must terminate (not hang) at the cap.
@@ -216,7 +168,7 @@ package body Sml_Reactive_Tests is
    is
       pragma Unreferenced (T);
       use type P_RC.Completion;
-      C       : Null_Ctx;
+      C       : P_Scaffold.Context;
       M       : P_SM.Machine := P_SM.Make (Phone, Initial => Idle);
       Outcome : P_RC.Completion;
    begin
@@ -232,7 +184,7 @@ package body Sml_Reactive_Tests is
    is
       pragma Unreferenced (T);
       use type T_RC.Completion;
-      C       : Null_Ctx;
+      C       : T_Scaffold.Context;
       M       : T_SM.Machine := T_SM.Make (Toggle, Initial => Ping);
       Outcome : T_RC.Completion;
    begin

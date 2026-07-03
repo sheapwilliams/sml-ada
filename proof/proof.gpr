@@ -5,7 +5,7 @@ with "../sml.gpr";
 --  its operators (Sml.Machines + Operators) for a concrete instance.
 project Proof is
 
-   for Source_Dirs use ("src");
+   for Source_Dirs use ("src", "../support/src");
    for Object_Dir use "obj";
 
    package Compiler is

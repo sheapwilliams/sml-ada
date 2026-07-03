@@ -1,6 +1,6 @@
 with AUnit.Assertions; use AUnit.Assertions;
 
-with Sml.Machines;
+with Machine_Scaffold;
 with Sml.Machines.Deferring;
 
 package body Sml_Deferring_Tests is
@@ -12,34 +12,12 @@ package body Sml_Deferring_Tests is
    type St is (Stopped, Playing, Paused);
    type Ev is (E_Play, E_Pause, E_Stop);
 
-   type Evt is record
-      Kind : Ev;
-   end record;
-
-   type Null_Ctx is null record;
-   type G is (Always);
-   type A is (Nothing);
-
-   function Kind_Of (E : Evt) return Ev
-   is (E.Kind);
-
-   function Evaluate (Gk : G; C : Null_Ctx; E : Evt) return Boolean is
-      pragma Unreferenced (Gk, C, E);
-   begin
-      return True;
-   end Evaluate;
-
-   procedure Execute (Ak : A; C : in out Null_Ctx; E : Evt) is null;
+   package Scaffold is new Machine_Scaffold (St, Ev);
+   use Scaffold;
+   use SM;
 
    function Deferred (S : St; E : Ev) return Boolean
    is (S = Stopped and then E = E_Pause);
-
-   function Rebuild (E : Ev) return Evt
-   is ((Kind => E));
-
-   package SM is new
-     Sml.Machines (St, Ev, Evt, Null_Ctx, G, A, Kind_Of, Evaluate, Execute);
-   use SM;
 
    package Def is new SM.Deferring (Deferred => Deferred, Rebuild => Rebuild);
    package Def2 is new
@@ -62,41 +40,15 @@ package body Sml_Deferring_Tests is
    type CSt is (Idle, Booting, Ready, Live);
    type CEv is (Start, Wake, Load);
 
-   type CEvt is record
-      Kind : CEv;
-   end record;
-
-   function CKind_Of (E : CEvt) return CEv
-   is (E.Kind);
-
-   function CEvaluate (Gk : G; C : Null_Ctx; E : CEvt) return Boolean is
-      pragma Unreferenced (Gk, C, E);
-   begin
-      return True;
-   end CEvaluate;
-
-   procedure CExecute (Ak : A; C : in out Null_Ctx; E : CEvt) is null;
+   package CScaffold is new Machine_Scaffold (CSt, CEv);
+   package CSM renames CScaffold.SM;
+   use CScaffold;
 
    function CDeferred (S : CSt; E : CEv) return Boolean
    is (S = Idle and then E in Wake | Load);
 
-   function CRebuild (E : CEv) return CEvt
-   is ((Kind => E));
-
-   package CSM is new
-     Sml.Machines
-       (CSt,
-        CEv,
-        CEvt,
-        Null_Ctx,
-        G,
-        A,
-        CKind_Of,
-        CEvaluate,
-        CExecute);
-
    package CDef is new
-     CSM.Deferring (Deferred => CDeferred, Rebuild => CRebuild);
+     CSM.Deferring (Deferred => CDeferred, Rebuild => Rebuild);
 
    --!format off
    Cascade_Table : constant CSM.Transition_Table :=
@@ -111,7 +63,7 @@ package body Sml_Deferring_Tests is
       pragma Unreferenced (T);
       M : Machine := Make (Table, Initial => Stopped);
       Q : Def.Deferral_Queue := Def.Empty_Queue;
-      C : Null_Ctx;
+      C : Scaffold.Context;
    begin
       --  Pause while Stopped: unhandled but deferred, so it is queued.
       Def.Post (M, Q, C, (Kind => E_Pause));
@@ -132,7 +84,7 @@ package body Sml_Deferring_Tests is
       pragma Unreferenced (T);
       M : Machine := Make (Table, Initial => Stopped);
       Q : Def.Deferral_Queue := Def.Empty_Queue;
-      C : Null_Ctx;
+      C : Scaffold.Context;
    begin
       --  Stop while Stopped is unhandled and not deferred -> dropped, not queued.
       Def.Post (M, Q, C, (Kind => E_Stop));
@@ -145,7 +97,7 @@ package body Sml_Deferring_Tests is
       pragma Unreferenced (T);
       M : Machine := Make (Table, Initial => Stopped);
       Q : Def2.Deferral_Queue := Def2.Empty_Queue;
-      C : Null_Ctx;
+      C : Scaffold.Context;
    begin
       Def2.Post (M, Q, C, (Kind => E_Pause));  --  queued (1)
       Def2.Post (M, Q, C, (Kind => E_Pause));  --  queued (2, full)
@@ -162,7 +114,7 @@ package body Sml_Deferring_Tests is
       pragma Unreferenced (T);
       M : CSM.Machine := CSM.Make (Cascade_Table, Initial => Idle);
       Q : CDef.Deferral_Queue := CDef.Empty_Queue;
-      C : Null_Ctx;
+      C : CScaffold.Context;
    begin
       --  Queue [Load, Wake] while Idle: both deferred, neither handled.
       CDef.Post (M, Q, C, (Kind => Load));

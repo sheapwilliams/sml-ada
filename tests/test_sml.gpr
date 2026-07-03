@@ -6,7 +6,7 @@ with "../sml.gpr";
 --  test plus the AUnit framework that Alire provides as a dependency.
 project Test_Sml is
 
-   for Source_Dirs use ("src");
+   for Source_Dirs use ("src", "../support/src");
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
    for Main use ("test_runner.adb");
