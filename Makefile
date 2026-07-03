@@ -17,9 +17,9 @@ build:
 test:
 	alr --non-interactive test
 
-## prove       Run the SPARK proof
+## prove       Run the SPARK proof (same flags as CI)
 prove:
-	alr exec -- gnatprove -j0 -P proof/proof.gpr
+	alr exec -- gnatprove -P proof/proof.gpr -j0 --level=2 --checks-as-errors=on
 
 ## format      Check source formatting
 format:
