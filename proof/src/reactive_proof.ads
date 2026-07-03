@@ -34,8 +34,10 @@ is
    function Has_Entry_Event (S : State) return Boolean
    is (S = Dialing);
 
+   --  Only Dialing has an entry event (see Has_Entry_Event); the other arms
+   --  are never consulted, so their value is a placeholder.
    function Entry_Event (S : State) return Event
-   is ((Kind => E_Connect));
+   is ((Kind => (if S = Dialing then E_Connect else E_Dial)));
 
    package SM is new
      Sml.Machines
