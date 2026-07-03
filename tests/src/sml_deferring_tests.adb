@@ -54,6 +54,57 @@ package body Sml_Deferring_Tests is
       (Paused,  E_Stop,  Always, Nothing, Stopped)];
    --!format on
 
+   --  A cascade whose queued events must be re-tried out of arrival order.
+   --  Load and Wake are both deferred while Idle and queue as [Load, Wake];
+   --  Start then advances Idle -> Booting, where Wake is handled but Load is
+   --  not.  Handling Wake (-> Ready) is what unblocks Load, so a single drain
+   --  pass strands Load -- only draining to a fixpoint re-delivers it in Ready.
+   type CSt is (Idle, Booting, Ready, Live);
+   type CEv is (Start, Wake, Load);
+
+   type CEvt is record
+      Kind : CEv;
+   end record;
+
+   function CKind_Of (E : CEvt) return CEv
+   is (E.Kind);
+
+   function CEvaluate (Gk : G; C : Null_Ctx; E : CEvt) return Boolean is
+      pragma Unreferenced (Gk, C, E);
+   begin
+      return True;
+   end CEvaluate;
+
+   procedure CExecute (Ak : A; C : in out Null_Ctx; E : CEvt) is null;
+
+   function CDeferred (S : CSt; E : CEv) return Boolean
+   is (S = Idle and then E in Wake | Load);
+
+   function CRebuild (E : CEv) return CEvt
+   is ((Kind => E));
+
+   package CSM is new
+     Sml.Machines
+       (CSt,
+        CEv,
+        CEvt,
+        Null_Ctx,
+        G,
+        A,
+        CKind_Of,
+        CEvaluate,
+        CExecute);
+
+   package CDef is new
+     CSM.Deferring (Deferred => CDeferred, Rebuild => CRebuild);
+
+   --!format off
+   Cascade_Table : constant CSM.Transition_Table :=
+     [(Idle,    Start, Always, Nothing, Booting),
+      (Booting, Wake,  Always, Nothing, Ready),
+      (Ready,   Load,  Always, Nothing, Live)];
+   --!format on
+
    procedure Test_Defer_And_Redeliver
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -105,6 +156,28 @@ package body Sml_Deferring_Tests is
          null;  --  expected
    end Test_Overflow;
 
+   procedure Test_Cascade_Redelivery
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      M : CSM.Machine := CSM.Make (Cascade_Table, Initial => Idle);
+      Q : CDef.Deferral_Queue := CDef.Empty_Queue;
+      C : Null_Ctx;
+   begin
+      --  Queue [Load, Wake] while Idle: both deferred, neither handled.
+      CDef.Post (M, Q, C, (Kind => Load));
+      CDef.Post (M, Q, C, (Kind => Wake));
+      Assert (CDef.Pending (Q) = 2, "both events deferred while Idle");
+
+      --  Start is handled (Idle -> Booting); the drain must then re-deliver
+      --  Wake (-> Ready) AND, in the same Post, retry Load (-> Live).
+      CDef.Post (M, Q, C, (Kind => Start));
+      Assert
+        (CSM.State_Of (M) = Live,
+         "cascade drains to a fixpoint: Wake, then the re-tried Load");
+      Assert (CDef.Pending (Q) = 0, "the whole queue drained");
+   end Test_Cascade_Redelivery;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
@@ -119,6 +192,10 @@ package body Sml_Deferring_Tests is
         (T,
          Test_Overflow'Access,
          "Capacity overflow raises Deferral_Overflow");
+      Register_Routine
+        (T,
+         Test_Cascade_Redelivery'Access,
+         "A cascade of deferred events drains to a fixpoint");
    end Register_Tests;
 
    overriding

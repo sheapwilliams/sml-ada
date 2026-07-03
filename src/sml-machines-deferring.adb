@@ -2,30 +2,39 @@ package body Sml.Machines.Deferring
   with SPARK_Mode
 is
 
-   --  Re-deliver every queued kind once, compacting those still unhandled
-   --  to the front in place.  The invariant keeps the write index (New_Len)
-   --  behind the read index (I), so each slot is read before it can be
-   --  overwritten.
+   --  Re-deliver the queue until a full pass changes nothing.  Handling one
+   --  deferred event can unblock another regardless of queue order, so a
+   --  single pass can strand an event that a later delivery would have freed;
+   --  sweeping to a fixpoint retries it.  Each productive pass removes at
+   --  least one event, so at most Capacity passes run -- which also bounds the
+   --  loop for SPARK.  A pass compacts the still-unhandled kinds to the front
+   --  in place; the inner invariant keeps the write index (New_Len) behind the
+   --  read index (I), so each slot is read before it can be overwritten.
    procedure Drain
-     (M : in out Machine; Q : in out Deferral_Queue; Ctx : in out Context)
-   is
-      Old_Len : constant Count_Of := Q.Len;
-      New_Len : Count_Of := 0;
+     (M : in out Machine; Q : in out Deferral_Queue; Ctx : in out Context) is
    begin
-      for I in 1 .. Old_Len loop
-         pragma Loop_Invariant (New_Len < I);
+      for Pass in 1 .. Capacity loop
          declare
-            K       : constant Event_Kind := Q.Items (I);
-            Handled : Boolean;
+            Old_Len : constant Count_Of := Q.Len;
+            New_Len : Count_Of := 0;
          begin
-            Process_Event (M, Ctx, Rebuild (K), Handled);
-            if not Handled then
-               New_Len := New_Len + 1;
-               Q.Items (New_Len) := K;
-            end if;
+            for I in 1 .. Old_Len loop
+               pragma Loop_Invariant (New_Len < I);
+               declare
+                  K       : constant Event_Kind := Q.Items (I);
+                  Handled : Boolean;
+               begin
+                  Process_Event (M, Ctx, Rebuild (K), Handled);
+                  if not Handled then
+                     New_Len := New_Len + 1;
+                     Q.Items (New_Len) := K;
+                  end if;
+               end;
+            end loop;
+            Q.Len := New_Len;
+            exit when New_Len = Old_Len;  --  fixpoint: nothing handled
          end;
       end loop;
-      Q.Len := New_Len;
    end Drain;
 
    procedure Post
