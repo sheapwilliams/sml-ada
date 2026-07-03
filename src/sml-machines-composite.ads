@@ -27,4 +27,13 @@ package Sml.Machines.Composite with SPARK_Mode is
      (Parent : in out Machine; Ctx : in out Context; Evt : Event)
    with Exceptional_Cases => (Unhandled_Event => True);
 
+   --  Reporting overload: apply no unhandled policy, report whether either
+   --  level fired, so a composite can itself be the child of a larger one
+   --  (mirrors the engine's lower-level Process_Event).
+   procedure Process
+     (Parent  : in out Machine;
+      Ctx     : in out Context;
+      Evt     : Event;
+      Handled : out Boolean);
+
 end Sml.Machines.Composite;

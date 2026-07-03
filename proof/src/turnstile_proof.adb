@@ -4,15 +4,6 @@ is
 
    use SM, Op;
 
-   --  The turnstile's only guard is "Always", so it ignores its inputs.
-   function Evaluate
-     (G : Guard_Kind; Ctx : Context; Evt : Event) return Boolean
-   is
-      pragma Unreferenced (G, Ctx, Evt);
-   begin
-      return True;
-   end Evaluate;
-
    Coin : constant Ev := (Kind => E_Coin);
    Push : constant Ev := (Kind => E_Push);
 

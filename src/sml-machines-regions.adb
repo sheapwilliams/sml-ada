@@ -5,8 +5,8 @@ is
    procedure Broadcast
      (Regions : in out Region_Array; Ctx : in out Context; Evt : Event) is
    begin
-      for I in Regions'Range loop
-         Process_Event (Regions (I), Ctx, Evt);
+      for R of Regions loop
+         Process_Event (R, Ctx, Evt);
       end loop;
    end Broadcast;
 

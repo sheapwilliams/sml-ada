@@ -44,7 +44,10 @@ package Sml.Simple_Machines with SPARK_Mode is
         Evaluate    => Evaluate,
         Execute     => Execute);
 
-   --  Re-export the engine's API so callers never name the inner instance.
+   --  Re-export the engine's own API so callers don't name Engine for it.
+   --  The opt-in layer generics can't be re-exported (GNAT rejects
+   --  instantiating a generic child of an instance through a renaming), so
+   --  those are instantiated via Engine: package Op is new M.Engine.Operators.
    subtype Transition is Engine.Transition;
    subtype Transition_Table is Engine.Transition_Table;
    subtype Machine is Engine.Machine;
@@ -72,6 +75,15 @@ package Sml.Simple_Machines with SPARK_Mode is
 
    procedure Process_Event
      (M : in out Machine; Ctx : in out Context; Evt : Event)
+   renames Engine.Process_Event;
+
+   --  Reporting variant: applies no unhandled policy, never raises, reports
+   --  whether a transition fired (the engine's lower-level Process_Event).
+   procedure Process_Event
+     (M       : in out Machine;
+      Ctx     : in out Context;
+      Evt     : Event;
+      Handled : out Boolean)
    renames Engine.Process_Event;
 
 end Sml.Simple_Machines;

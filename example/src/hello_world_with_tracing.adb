@@ -143,7 +143,7 @@ procedure Hello_World_With_Tracing is
    --!format on
 
    M   : Machine := Make (Table, Initial => Established);
-   Ctx : Context := (null record);
+   Ctx : Context;
 begin
    Put_Line ("start: " & State_Of (M)'Image);
    Process_Event (M, Ctx, (Kind => E_Release));

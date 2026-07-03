@@ -13,4 +13,16 @@ is
       end if;
    end Process;
 
+   procedure Process
+     (Parent  : in out Machine;
+      Ctx     : in out Context;
+      Evt     : Event;
+      Handled : out Boolean) is
+   begin
+      Process_Child (Ctx, Evt, Handled);
+      if not Handled then
+         Process_Event (Parent, Ctx, Evt, Handled);
+      end if;
+   end Process;
+
 end Sml.Machines.Composite;

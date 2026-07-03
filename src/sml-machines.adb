@@ -16,22 +16,32 @@ is
    is
    begin
       if Complete = Total then
-         for S in State loop
-            for K in Event_Kind loop
-               if (for all T of Table => T.From /= S or else T.On /= K) then
-                  raise Incomplete_Table
-                    with "missing transition: " & S'Image & " on " & K'Image;
-               end if;
+         declare
+            Covered : array (State, Event_Kind) of Boolean :=
+              [others => [others => False]];
+         begin
+            for T of Table loop
+               Covered (T.From, T.On) := True;
             end loop;
-         end loop;
+
+            for S in State loop
+               for K in Event_Kind loop
+                  if not Covered (S, K) then
+                     raise Incomplete_Table
+                       with
+                         "missing transition: " & S'Image & " on " & K'Image;
+                  end if;
+               end loop;
+            end loop;
+         end;
       end if;
 
-      return M : Machine (Count => Table'Length) do
-         M.Current := Initial;
-         M.On_Unhandled := On_Unhandled;
-         M.Default := Default;
-         M.Table := Table;
-      end return;
+      return
+        (Count        => Table'Length,
+         Current      => Initial,
+         On_Unhandled => On_Unhandled,
+         Default      => Default,
+         Table        => Table);
    end Make;
 
    procedure Process_Event

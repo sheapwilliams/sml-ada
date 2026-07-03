@@ -2,14 +2,6 @@ package body Bundled_Proof
   with SPARK_Mode
 is
 
-   function Evaluate
-     (G : Guard_Kind; Ctx : Context; Evt : Event) return Boolean
-   is
-      pragma Unreferenced (G, Ctx, Evt);
-   begin
-      return True;
-   end Evaluate;
-
    use SM;
 
    --!format off

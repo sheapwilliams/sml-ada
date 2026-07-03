@@ -101,6 +101,22 @@ package body Sml_Simple_Machines_Tests is
       Assert (State_Of (Mac) = Closed, "unhandled event stays put");
    end Test_Unhandled_Stay;
 
+   procedure Test_Reporting_Overload
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Mac     : Machine := Make (Table, Initial => Closed);
+      C       : Ctx_T;
+      Handled : Boolean;
+   begin
+      Process_Event (Mac, C, Push, Handled);  --  no Closed+Push row
+      Assert
+        (not Handled and then State_Of (Mac) = Closed,
+         "the reporting overload applies no policy and reports unhandled");
+      Process_Event (Mac, C, Coin, Handled);
+      Assert (Handled, "a fired transition reports Handled");
+   end Test_Reporting_Overload;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
@@ -111,6 +127,10 @@ package body Sml_Simple_Machines_Tests is
         (T, Test_Guard_Blocks'Access, "Guard gates a transition");
       Register_Routine
         (T, Test_Unhandled_Stay'Access, "Unhandled event: Stay policy");
+      Register_Routine
+        (T,
+         Test_Reporting_Overload'Access,
+         "The facade re-exports the reporting Process_Event");
    end Register_Tests;
 
    overriding

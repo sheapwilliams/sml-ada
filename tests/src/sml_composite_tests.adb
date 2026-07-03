@@ -9,8 +9,8 @@ package body Sml_Composite_Tests is
 
    --  A power tool.  Parent: Off/On (the Power event).  Child: Low/High speed
    --  (the Tick event).  Tick is a child concern, Power a parent concern; the
-   --  composite routes each to the right level.
-   type Event_Kind is (E_Power, E_Tick);
+   --  composite routes each to the right level.  E_Nop is handled by neither.
+   type Event_Kind is (E_Power, E_Tick, E_Nop);
 
    type Event is record
       Kind : Event_Kind;
@@ -104,12 +104,39 @@ package body Sml_Composite_Tests is
       Assert (Child_SM.State_Of (Child) = Low, "child handles Tick again");
    end Test_Child_First;
 
+   procedure Test_Reporting (T : in out AUnit.Test_Cases.Test_Case'Class) is
+      pragma Unreferenced (T);
+      Parent  : Parent_SM.Machine :=
+        Parent_SM.Make (Parent_Table, Initial => Off);
+      C       : Null_Ctx;
+      Handled : Boolean;
+   begin
+      Child := Child_SM.Make (Child_Table, Initial => Low);
+
+      Comp.Process (Parent, C, (Kind => E_Tick), Handled);
+      Assert (Handled, "the child handling Tick reports Handled");
+
+      Comp.Process (Parent, C, (Kind => E_Power), Handled);
+      Assert (Handled, "the parent handling Power reports Handled");
+
+      Comp.Process (Parent, C, (Kind => E_Nop), Handled);
+      Assert
+        (not Handled, "an event neither level handles reports not Handled");
+      Assert
+        (Parent_SM.State_Of (Parent) = On,
+         "and no unhandled policy was applied to the parent");
+   end Test_Reporting;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
         (T,
          Test_Child_First'Access,
          "Child handles its events; the parent handles what the child ignores");
+      Register_Routine
+        (T,
+         Test_Reporting'Access,
+         "The reporting Process lets a composite nest inside another");
    end Register_Tests;
 
    overriding
