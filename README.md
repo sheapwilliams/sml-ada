@@ -56,13 +56,13 @@ so you pay only for what you instantiate. The whole library is ~370 lines.
 | Internal / run-to-completion events | `process` / internal transitions | `Sml.Machines.Reactive` (entry-event chaining, bounded by `Max_Steps`) |
 | `on_entry` / `on_exit` | ✓ native | entry events via `Reactive`; no dedicated exit actions |
 | History pseudostates | ✗ | ✗ |
-| Compile-time, low overhead | ✓ (header metaprogramming) | ✓ (generics; the generated machine dissolves to a jump table at `-O3`) |
-| Code generation | ✗ | ✓ — a text spec → enums + `case` dispatch (see below) |
+| Compile-time, low overhead | ✓ (header metaprogramming) | ✓ (generics; an instantiated machine inlines to a jump table at `-O3`) |
+| Code generation | ✗ | not shipped — feasible as an add-on (text spec → enums + `case` dispatch; see note below) |
 | Formal verification | ✗ | ✓ SPARK: AoRTE + contracts, `gnatprove --checks-as-errors=on` |
 
 The trade: Boost.SML offers richer *native* orthogonal regions and entry/exit
-actions in a single header; this library offers a tiny formally-verified core,
-optional codegen, and an a-la-carte feature set — at the cost of composing the
+actions in a single header; this library offers a tiny formally-verified core
+and an a-la-carte feature set — at the cost of composing the
 heterogeneous-region and entry/exit cases yourself.
 
 ## Operator notation
@@ -285,28 +285,15 @@ holds (`gnatprove` only analyses a generic through a concrete instance). `Make`'
 body is excluded from proof because its `Total`-completeness check raises
 `Incomplete_Table` by design — that raise is part of its contract for callers.
 
-## Generating an optimized machine
+## Generating a specialized machine (not shipped)
 
 The table engine scans the transition table on every event — O(n) in the number
-of transitions — and stores the table in each `Machine`. For hot paths you can
-instead **generate** a specialized machine from a terse spec. The generator
-(`example/generated/generate.adb`) reads a text spec and emits the enums and a
-self-contained machine whose `Process_Event` is a `case` on the current state.
-
-The spec (`example/generated/hello_world.fsm`) is the whole machine, written in
-the **same operator notation as the engine's Ada table** — so migrating from the
-engine version is copy-paste (the aggregate's `[`, commas and `];` are tolerated):
-
-```
-Initial => Established
-
-Established + Release            / Send_Fin >= Fin_Wait_1
-Fin_Wait_1  + Ack     (Is_Valid)            >= Fin_Wait_2
-Fin_Wait_2  + Fin     (Is_Valid) / Send_Ack >= Timed_Wait
-Timed_Wait  + Timeout                       >= Closed
-```
-
-and the generated `Process_Event` is:
+of transitions — and stores the table in each `Machine`. For hot paths this is
+straightforward to sidestep by **generating** a specialized machine from a terse
+text spec instead: parse rows written in the same operator notation as the Ada
+table (`From + Event (Guard) / Action >= To`) into the `State`/`Event_Kind`
+enums, then emit a `Process_Event` that is a `case` on the current state — an
+O(1) jump table rather than a scan:
 
 ```ada
 case M.Current is
@@ -320,72 +307,15 @@ case M.Current is
 end case;
 ```
 
-### Why generate
+Marked `Inline` and built at `-O3 -gnatn`, a whole-program driver over a
+compile-time-known event sequence then constant-folds the machine away entirely
+— the same shape as an optimized header-only Boost.SML `main` (just the action
+side effects remain). The only hand-written Ada is what no table can imply: the
+event payloads, the `Context`, and one inlinable subprogram per guard/action.
 
-- **O(1) dispatch instead of O(n).** The `case` on the current state compiles to
-  a jump table, so an event goes straight to its state's arm rather than scanning
-  the whole table. No table, no scan, no indirect calls, and a `Machine` is one
-  enum.
-- **It dissolves to nothing for a fixed event sequence.** The generated machine
-  is marked `Inline`, so a whole-program driver that feeds compile-time-known
-  events constant-folds the entire machine away. `example/generated/run.adb`
-  mirrors Boost.SML's `main` — a baked sequence with a `pragma Assert` on each
-  resulting state (`assert(sm.is(...))` in C++):
-
-  ```ada
-  M : Machine := Make;                                  --  Established
-  Process_Event (M, Ctx, (Kind => Release));
-  pragma Assert (State_Of (M) = Fin_Wait_1);
-  Process_Event (M, Ctx, (Kind => Ack, Ack_Valid => True));
-  pragma Assert (State_Of (M) = Fin_Wait_2);
-  --  ... Fin, Timeout ...
-  ```
-
-  Built at `-O3 -gnatn` (cross-unit inlining), `_ada_run` reduces to just the
-  action side effects — `Process_Event`, the guards, the state and even the
-  asserts (proven true) all gone:
-
-  ```asm
-  _ada_run:
-      lea    rdi, ["send: fin"]
-      call   ada__text_io__put_line
-      lea    rdi, ["send: ack"]
-      jmp    ada__text_io__put_line     ; tail call
-  ```
-
-  That is the same shape as the optimized Boost.SML `main` (two `printf`s) — the
-  compiler does the dissolving, here as in C++ (C++ gets it for free because it's
-  header-only one-TU; Ada needs `pragma Inline` + `-gnatn` to inline across units).
-- **Much less boilerplate.** From the spec, the generator derives the
-  `State`/`Event_Kind` enums and writes `Make`, `State_Of`, `Process_Event`, and
-  a Graphviz diagram. The machine calls each guard/action **by name**, so the
-  only hand-written Ada is the parts no table can imply — `hello_world_logic`
-  (event payloads, `Context`, one inlinable subprogram per guard/action) — plus
-  the driver. A parser, not an Ada value, is the source of truth, which is what
-  lets the enums be generated too.
-
-### How to generate and build the binary
-
-The generated example lives in `example/generated/`. The generated sources are
-**not** committed — producing them is the whole point — so it is a two-phase
-build: run the generator, then compile the driver against what it emitted (the
-`.gpr` already sets `-O3 -gnatn` so it dissolves as above).
-
-```console
-# 1. generate the enums + machine + diagram from the spec
-alr exec -- gprbuild -P example/generated/generated.gpr generate.adb
-(cd example/generated && bin/generate)
-
-# 2. build & run the whole-program driver
-alr exec -- gprbuild -P example/generated/generated.gpr run.adb
-./example/generated/bin/run        # send: fin / send: ack
-```
-
-You hand-write `hello_world.fsm` (the spec), the `hello_world_logic` package
-(`.ads` + `.adb`: the `Event` payloads, the `Context`, and one inlinable
-subprogram per guard/action), and `run.adb` (the driver, mirroring Boost.SML's
-`main`). The generator emits the enums and the inlinable machine. Re-run step 1
-whenever `hello_world.fsm` changes.
+This repository does **not** ship such a generator; it is described here only as
+a known, self-contained extension — a parser over the notation the Ada table
+already uses — left out to keep the crate to its verified library core.
 
 ## Building, testing, proving, formatting
 
@@ -411,8 +341,6 @@ tests/    AUnit suite (test_sml.gpr)
 proof/    SPARK proof target (proof.gpr)
 example/  hello_world.adb, simple_turnstile.adb, orthogonal_regions.adb,
           run_to_completion.adb, deferred_events.adb, composite_states.adb
-example/generated/  hello_world.fsm spec + generate.adb + hand-written logic;
-          generates a self-contained machine (generated.gpr)
 docs/     hello_world.dot/.svg (state diagram)
 ```
 
