@@ -53,7 +53,7 @@ so you pay only for what you instantiate. The whole library is ~370 lines.
 | Orthogonal regions | ✓ native (heterogeneous) | `Sml.Machines.Regions` for identical replicas; heterogeneous regions composed by hand |
 | Composite / hierarchical states | ✓ native sub-machines | `Sml.Machines.Composite` (child-first dispatch, bubbles to parent) |
 | Deferred events | `defer` | `Sml.Machines.Deferring` (bounded queue) |
-| Internal / run-to-completion events | `process` / internal transitions | `Sml.Machines.Reactive` (entry-event chaining, bounded by `Max_Steps`) |
+| Internal / run-to-completion events | `process` / internal transitions | `Sml.Machines.Reactive` (entry-event chaining, bounded by `Max_Steps`; reports `Settled` vs `Step_Limit_Reached`) |
 | `on_entry` / `on_exit` | ✓ native | entry events via `Reactive`; no dedicated exit actions |
 | History pseudostates | ✗ | ✗ |
 | Compile-time, low overhead | ✓ (header metaprogramming) | ✓ (generics; an instantiated machine inlines to a jump table at `-O3`) |
@@ -184,7 +184,18 @@ RC.Run_To_Completion (M, Ctx, Dial);   --  Idle -> Dialing -> Connected
 
 The chain is bounded by `Max_Steps` (default 16), so a cyclic configuration
 stops instead of looping forever — which is also how SPARK proves it terminates.
-See `example/run_to_completion.adb`.
+Unlike Boost.SML (which runs internal transitions to true completion), that cap
+can cut a chain short; a `Run_To_Completion` overload reports which happened:
+
+```ada
+Outcome : RC.Completion;
+RC.Run_To_Completion (M, Ctx, Dial, Outcome);
+--  Settled            -- reached a state with no (or a non-advancing) entry event
+--  Step_Limit_Reached -- still advancing when Max_Steps was hit
+```
+
+A state whose entry event leaves it in place counts as `Settled` — the event
+fires once, not `Max_Steps` times. See `example/run_to_completion.adb`.
 
 ### Deferred events
 

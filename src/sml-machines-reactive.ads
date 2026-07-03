@@ -17,8 +17,25 @@ generic
    with function Entry_Event (S : State) return Event;
 package Sml.Machines.Reactive with SPARK_Mode is
 
+   --  Outcome of a run.  Settled: the chain reached a state with no entry
+   --  event, or one whose entry event left it in place (a stable config).
+   --  Step_Limit_Reached: the chain was still advancing when Max_Steps was
+   --  hit, so the machine may not have finished settling.  (The bound is what
+   --  keeps this terminating and SPARK-provable, unlike Boost.SML which runs
+   --  internal transitions to completion; this flag surfaces when it bit.)
+   type Completion is (Settled, Step_Limit_Reached);
+
    --  Process Evt, then process the entry event of each state entered, until a
-   --  state has none or Max_Steps is reached.
+   --  state has none, a state does not advance (settled), or Max_Steps is
+   --  reached.  Result distinguishes settling from hitting the cap.
+   procedure Run_To_Completion
+     (M      : in out Machine;
+      Ctx    : in out Context;
+      Evt    : Event;
+      Result : out Completion)
+   with Exceptional_Cases => (Unhandled_Event => True);
+
+   --  Convenience overload for callers that do not inspect the outcome.
    procedure Run_To_Completion
      (M : in out Machine; Ctx : in out Context; Evt : Event)
    with Exceptional_Cases => (Unhandled_Event => True);

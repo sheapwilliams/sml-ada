@@ -116,6 +116,69 @@ package body Sml_Reactive_Tests is
       (Pong, E_Beat, Always, Nothing, Ping)];
    --!format on
 
+   --  Self-loop: an entry event that fires but leaves the state unchanged must
+   --  be treated as settled (fire once), not spun Max_Steps times.  A Context
+   --  counter makes the number of firings observable.
+   type NS_Ctx is record
+      Count : Natural := 0;
+   end record;
+
+   type NS_St is (NS_Start, NS_Loop);
+   type NS_Ev is (E_Go, E_Tick);
+
+   type NS_Event is record
+      Kind : NS_Ev;
+   end record;
+
+   type NS_A is (Nothing, Bump);
+
+   function NS_Kind (E : NS_Event) return NS_Ev
+   is (E.Kind);
+
+   function NS_Eval (Gk : G; C : NS_Ctx; E : NS_Event) return Boolean is
+      pragma Unreferenced (Gk, C, E);
+   begin
+      return True;
+   end NS_Eval;
+
+   procedure NS_Exec (Ak : NS_A; C : in out NS_Ctx; E : NS_Event) is
+      pragma Unreferenced (E);
+   begin
+      if Ak = Bump then
+         C.Count := C.Count + 1;
+      end if;
+   end NS_Exec;
+
+   package NS_SM is new
+     Sml.Machines
+       (NS_St,
+        NS_Ev,
+        NS_Event,
+        NS_Ctx,
+        G,
+        NS_A,
+        NS_Kind,
+        NS_Eval,
+        NS_Exec);
+
+   function NS_Has (S : NS_St) return Boolean
+   is (S = NS_Loop);
+
+   function NS_Entry (S : NS_St) return NS_Event is
+      pragma Unreferenced (S);
+   begin
+      return (Kind => E_Tick);
+   end NS_Entry;
+
+   package NS_RC is new
+     NS_SM.Reactive (Has_Entry_Event => NS_Has, Entry_Event => NS_Entry);
+
+   --!format off
+   Self_Loop : constant NS_SM.Transition_Table :=
+     [(NS_Start, E_Go,   Always, Nothing, NS_Loop),
+      (NS_Loop,  E_Tick, Always, Bump,    NS_Loop)];
+   --!format on
+
    procedure Test_Run_To_Completion
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -148,6 +211,55 @@ package body Sml_Reactive_Tests is
          "cyclic entry events stop after Max_Steps without looping forever");
    end Test_Bounded;
 
+   procedure Test_Completion_Settled
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use type P_RC.Completion;
+      C       : Null_Ctx;
+      M       : P_SM.Machine := P_SM.Make (Phone, Initial => Idle);
+      Outcome : P_RC.Completion;
+   begin
+      P_RC.Run_To_Completion (M, C, (Kind => E_Dial), Outcome);
+      Assert (P_SM.State_Of (M) = Connected, "settles to Connected");
+      Assert
+        (Outcome = P_RC.Settled,
+         "a chain reaching a state with no entry event reports Settled");
+   end Test_Completion_Settled;
+
+   procedure Test_Completion_Step_Limit
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use type T_RC.Completion;
+      C       : Null_Ctx;
+      M       : T_SM.Machine := T_SM.Make (Toggle, Initial => Ping);
+      Outcome : T_RC.Completion;
+   begin
+      T_RC.Run_To_Completion (M, C, (Kind => E_Beat), Outcome);
+      Assert
+        (Outcome = T_RC.Step_Limit_Reached,
+         "a still-progressing chain that hits Max_Steps reports the limit");
+   end Test_Completion_Step_Limit;
+
+   procedure Test_No_Spin_On_Self_Loop
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use type NS_RC.Completion;
+      C       : NS_Ctx;
+      M       : NS_SM.Machine := NS_SM.Make (Self_Loop, Initial => NS_Start);
+      Outcome : NS_RC.Completion;
+   begin
+      NS_RC.Run_To_Completion (M, C, (Kind => E_Go), Outcome);
+      Assert
+        (C.Count = 1,
+         "a self-looping entry event fires once, not Max_Steps times");
+      Assert
+        (Outcome = NS_RC.Settled,
+         "a state that does not advance is settled, not a step-limit");
+   end Test_No_Spin_On_Self_Loop;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
@@ -158,6 +270,18 @@ package body Sml_Reactive_Tests is
         (T,
          Test_Bounded'Access,
          "Max_Steps bounds a cyclic entry-event chain");
+      Register_Routine
+        (T,
+         Test_Completion_Settled'Access,
+         "Run_To_Completion reports Settled when the chain settles");
+      Register_Routine
+        (T,
+         Test_Completion_Step_Limit'Access,
+         "Run_To_Completion reports Step_Limit_Reached at the cap");
+      Register_Routine
+        (T,
+         Test_No_Spin_On_Self_Loop'Access,
+         "A self-looping entry event fires once, not Max_Steps times");
    end Register_Tests;
 
    overriding
