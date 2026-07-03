@@ -1,12 +1,15 @@
 name = "sml"
 description = "Declarative, low-overhead state machines (Boost.SML-inspired)"
-version = "0.1.0-dev"
+version = "0.1.0"
 
-authors = ["lenny"]
-maintainers = ["lenny <639247+ldm5180@users.noreply.github.com>"]
-licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
-website = ""
-tags = []
+authors = ["Lenny Maiorani"]
+maintainers = ["Lenny Maiorani <639247+ldm5180@users.noreply.github.com>"]
+maintainers-logins = ["ldm5180"]
+licenses = "MIT"
+website = "https://github.com/ldm5180/sml-ada"
+tags = ["state-machine", "fsm", "spark"]
+
+project-files = ["sml.gpr"]
 
 [[depends-on]]
 aunit = "^26.0.0"
@@ -14,8 +17,14 @@ aunit = "^26.0.0"
 [build-switches]
 "*".ada_version = "Ada2022"
 
-#  `alr test` builds the AUnit runner and executes it; the runner exits
-#  non-zero on any failing assertion so CI fails loudly.
+#  `alr test` runs actions with an empty GPR_PROJECT_PATH, so each wraps its
+#  command in `alr exec --` to pick up the toolchain and AUnit.  Two argv-only
+#  actions (no `sh -c`, no `&&`) so this runs on Windows too; the runner exits
+#  non-zero on any failing assertion, so a failure fails the job.
 [[actions]]
 type = "test"
-command = ["sh", "-c", "alr exec -- gprbuild -p -P tests/test_sml.gpr && tests/bin/test_runner"]
+command = ["alr", "exec", "--", "gprbuild", "-p", "-P", "tests/test_sml.gpr"]
+
+[[actions]]
+type = "test"
+command = ["alr", "exec", "--", "tests/bin/test_runner"]
