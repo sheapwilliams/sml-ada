@@ -47,7 +47,7 @@ so you pay only for what you instantiate. The whole library is ~370 lines.
 | Declarative transition DSL | `src + event[guard] / action = dst` | `From + Event (Guard) / Action >= To` (`Sml.Machines.Operators`) |
 | Named guards & actions | functor objects | enum-dispatched, so the table stays pure data and the engine inlines |
 | Events with payloads | ✓ | ✓ (variant record); or `Sml.Simple_Machines` for no-payload events |
-| Extended state | dependency injection | a `Context` record passed to guards/actions |
+| Extended state | dependency injection | a `Context` record passed to guards/actions (or bundled into the machine via `Sml.Machines.Bundled`) |
 | Completeness / unhandled policy | `process_event` returns handled; custom unexpected handling | `Total`/`Partial` check + `Stay`/`Raise_Error`/`Go_To_Default` |
 | Logging | `logger` policy | four structured `On_Event`/`On_Guard`/`On_Action`/`On_Unhandled` hooks |
 | Orthogonal regions | ✓ native (heterogeneous) | `Sml.Machines.Regions` for identical replicas; heterogeneous regions composed by hand |
@@ -241,6 +241,27 @@ Comp.Process (Parent, Ctx, Evt);   --  child first, then parent
 
 See `example/composite_states.adb`.
 
+### Bundling the context into the machine
+
+By default `Process_Event` takes the `Context` explicitly — which is exactly what
+lets `Composite` and `Regions` share one context across several machines. If you
+instead want a single, self-contained machine that *owns* its context (Boost.SML's
+model, where the extended state is injected into the `sm` and `process_event`
+takes only the event), instantiate `Sml.Machines.Bundled`:
+
+```ada
+package B is new SM.Bundled;
+Obj : B.Instance := B.Make (Table, Initial => Idle);
+
+B.Process_Event (Obj, (Kind => Go));   --  no Context argument
+--  ... Obj.Ctx ...                     --  the extended state, read/written in place
+```
+
+`Instance` holds the machine and its `Context` together; both components stay
+visible, so `Obj.Ctx` is read and written directly, just as an explicit context
+would be. It's opt-in — the core engine still keeps `Context` external for the
+shared-context cases — and `Instance` is limited only when your `Context` is.
+
 ### Completeness & unhandled events
 
 `Make` takes two policy knobs:
@@ -347,7 +368,7 @@ keeps their hand-aligned columns.
 src/      sml.ads, sml-machines.{ads,adb}, sml-machines-operators.ads,
           sml-simple_machines.ads, sml-machines-regions.{ads,adb},
           sml-machines-reactive.{ads,adb}, sml-machines-deferring.{ads,adb},
-          sml-machines-composite.{ads,adb}
+          sml-machines-composite.{ads,adb}, sml-machines-bundled.{ads,adb}
 tests/    AUnit suite (test_sml.gpr)
 proof/    SPARK proof target (proof.gpr)
 example/  hello_world.adb, simple_turnstile.adb, orthogonal_regions.adb,

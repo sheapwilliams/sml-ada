@@ -54,7 +54,10 @@ package Sml.Machines with SPARK_Mode is
       Complete     : Completeness := Partial;
       On_Unhandled : Unhandled_Policy := Stay;
       Default      : State := State'First) return Machine
-   with Post => State_Of (Make'Result) = Initial;
+   with
+     Post =>
+       State_Of (Make'Result) = Initial
+       and then Make'Result.Count = Table'Length;
 
    procedure Process_Event
      (M : in out Machine; Ctx : in out Context; Evt : Event)
