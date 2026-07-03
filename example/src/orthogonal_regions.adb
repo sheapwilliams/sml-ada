@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates orthogonal regions: one device that is SIMULTANEOUSLY in two
 --  independent concurrent regions, each its own machine, both advanced by the
 --  same event stream.  Here a media player has a Playback region

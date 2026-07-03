@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates Sml.Simple_Machines: a turnstile whose Coin/Push events carry
 --  no payload, so there is no variant record and no Kind_Of to write -- you
 --  instantiate with the event enumeration directly.  The table uses the same

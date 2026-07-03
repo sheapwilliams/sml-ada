@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A TCP-teardown machine (Boost.SML's hello_world) built with the opt-in
 --  operators (Sml.Machines.Operators) so each row reads close to Boost.SML:
 --  From + Event (Guard) / Action >= To.

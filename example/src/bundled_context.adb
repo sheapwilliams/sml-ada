@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates Sml.Machines.Bundled: a vending machine that OWNS its extended
 --  state.  With the core engine you thread a Context through every
 --  Process_Event call (see hello_world); Bundled binds the Context to the

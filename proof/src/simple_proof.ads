@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Simple_Machines instance (a turnstile, whose Coin/Push events
 --  carry no payload) so gnatprove verifies the no-payload layer: the engine is
 --  free of run-time errors and Make establishes the initial state.

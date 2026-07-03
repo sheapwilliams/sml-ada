@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Machines.Reactive instance so gnatprove verifies the
 --  run-to-completion loop free of run-time errors (and propagating only
 --  Unhandled_Event).  Run only exercises Make, as elsewhere.

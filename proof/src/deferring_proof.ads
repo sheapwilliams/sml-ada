@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Machines.Deferring instance so gnatprove verifies the queue:
 --  Post and the internal drain are proved free of run-time errors (and Post
 --  propagates only Deferral_Overflow).  Run only exercises Make.

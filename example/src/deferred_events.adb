@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates Sml.Machines.Deferring: a media player where Pause arrives too
 --  early (while Stopped).  It is deferred, then re-delivered once Play moves the
 --  player to Playing, settling at Paused.  Run it to see the queue fill and

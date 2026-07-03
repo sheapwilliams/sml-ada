@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  hello_world.adb with the four structured logging hooks wired in: On_Event,
 --  On_Guard, On_Action and On_Unhandled.  Each is gated on Trace_Config.Enabled
 --  (on in the debug profile, compiled out in release) so it builds both ways;

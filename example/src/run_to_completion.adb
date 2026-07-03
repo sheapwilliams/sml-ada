@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates Sml.Machines.Reactive: a phone whose Dialing state emits a
 --  Connect event on entry, so one outside Dial event runs to completion all the
 --  way to Connected.  Run it to see the single Dial settle two states forward.

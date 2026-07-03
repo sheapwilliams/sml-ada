@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete instance so gnatprove has something to verify (it does not
 --  analyse uninstantiated generics).  It instantiates the engine and its
 --  operators (Sml.Machines + Sml.Machines.Operators) for a turnstile

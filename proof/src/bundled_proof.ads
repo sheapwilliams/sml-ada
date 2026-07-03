@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Machines.Bundled instance so gnatprove verifies the layer:
 --  Process_Event is proved free of run-time errors (and propagates only
 --  Unhandled_Event), and Make's Post (State_Of (Make'Result) = Initial) holds.

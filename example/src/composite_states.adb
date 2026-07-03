@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  Demonstrates Sml.Machines.Composite: a power tool with a parent machine
 --  (Off/On, the Power button) wrapping a child machine (Low/High speed, the
 --  Tick).  An event tries the child first, then bubbles to the parent -- so

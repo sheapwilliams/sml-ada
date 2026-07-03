@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Machines.Composite instance so gnatprove verifies the
 --  child-first dispatch free of run-time errors (propagating only the parent's
 --  Unhandled_Event).  The child here is a trivial "never handles" stand-in --

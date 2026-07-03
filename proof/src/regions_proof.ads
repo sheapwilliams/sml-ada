@@ -1,5 +1,3 @@
-pragma Ada_2022;
-
 --  A concrete Sml.Machines.Regions instance so gnatprove verifies the broadcast
 --  layer: Broadcast and All_In are proved free of run-time errors, and
 --  Broadcast is proved to propagate only Unhandled_Event.  (As elsewhere, a
