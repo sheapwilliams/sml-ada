@@ -362,20 +362,6 @@ gnatformat --check src/*.ad? tests/src/*.ad? example/src/*.ad? proof/src/*.ad?
 Transition tables are wrapped in `--!format off`/`--!format on` so `gnatformat`
 keeps their hand-aligned columns.
 
-## Layout
-
-```
-src/      sml.ads, sml-machines.{ads,adb}, sml-machines-operators.ads,
-          sml-simple_machines.ads, sml-machines-regions.{ads,adb},
-          sml-machines-reactive.{ads,adb}, sml-machines-deferring.{ads,adb},
-          sml-machines-composite.{ads,adb}, sml-machines-bundled.{ads,adb}
-tests/    AUnit suite (test_sml.gpr)
-proof/    SPARK proof target (proof.gpr)
-example/  hello_world.adb, simple_turnstile.adb, orthogonal_regions.adb,
-          run_to_completion.adb, deferred_events.adb, composite_states.adb
-docs/     hello_world.dot/.svg (state diagram)
-```
-
 ## Requirements
 
 GNAT + `gprbuild` (via Alire); the crate compiles as **Ada 2022**. The test
