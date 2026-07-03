@@ -45,13 +45,14 @@ jobs:
       - name: Build & run the example without tracing
         run: |
           alr exec -- gprbuild -p -XTRACE=off -P example/example.gpr
-          ./example/bin/hello_world
+          ./example/bin/off/hello_world
 
       - name: Build & run the example with tracing
+        # Per-mode build dirs (bin/<mode>) mean no clean is needed between the
+        # off and on builds; the traced binary lives in bin/on.
         run: |
-          rm -rf example/obj example/bin
           alr exec -- gprbuild -p -XTRACE=on -P example/example.gpr
-          ./example/bin/hello_world
+          ./example/bin/on/hello_world_with_tracing
 
   proof:
     name: SPARK proof

@@ -8,8 +8,12 @@ project Example is
    Trace : Trace_Mode := external ("TRACE", "off");
 
    for Source_Dirs use ("src", "cfg/" & Trace);
-   for Object_Dir use "obj";
-   for Exec_Dir use "bin";
+   --  Per-mode object and exec dirs (obj/<mode>, bin/<mode>) so switching TRACE
+   --  never reuses stale artifacts -- gprbuild's incremental build can miss the
+   --  cfg/on <-> cfg/off source-dir swap, so without this a rebuild after a
+   --  switch needs a manual clean.
+   for Object_Dir use "obj/" & Trace;
+   for Exec_Dir use "bin/" & Trace;
    for Main use
      ("hello_world.adb",
       "hello_world_with_tracing.adb",
