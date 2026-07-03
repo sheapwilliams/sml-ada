@@ -12,6 +12,7 @@ project Example is
    for Exec_Dir use "bin";
    for Main use
      ("hello_world.adb",
+      "hello_world_with_tracing.adb",
       "simple_turnstile.adb",
       "orthogonal_regions.adb",
       "run_to_completion.adb",

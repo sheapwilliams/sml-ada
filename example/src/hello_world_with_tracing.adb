@@ -1,18 +1,18 @@
 pragma Ada_2022;
 
---  A TCP-teardown machine (Boost.SML's hello_world) built with the opt-in
---  operators (Sml.Machines.Operators) so each row reads close to Boost.SML:
---  From + Event (Guard) / Action >= To.
---
---  Read this top-to-bottom as a recipe for building your own machine.  For the
---  same machine with structured logging wired in, see hello_world_with_tracing.
+--  hello_world.adb with the four structured logging hooks wired in: On_Event,
+--  On_Guard, On_Action and On_Unhandled.  Each is gated on Trace_Config.Enabled
+--  (set by the TRACE scenario, cfg/on vs cfg/off) so CI builds it both ways;
+--  when off, the message-building folds away and tracing costs nothing.  See
+--  hello_world.adb for the same machine with no logging.
 
 with Ada.Text_IO; use Ada.Text_IO;
 
 with Sml.Machines;
 with Sml.Machines.Operators;
+with Trace_Config;
 
-procedure Hello_World is
+procedure Hello_World_With_Tracing is
 
    --  Event_Kind literals are prefixed E_* so the event "names" below
    --  (Release, Ack, ...), which are the operator wrappers, don't collide.
@@ -70,17 +70,58 @@ procedure Hello_World is
       end case;
    end Execute;
 
+   --  Opt-in structured logging.  Each hook is gated on Trace_Config.Enabled
+   --  (set by the TRACE scenario) so CI builds this both ways; when off, the
+   --  message-building folds away and tracing costs nothing.
+   procedure On_Event (Evt : Event_Kind; From : State) is
+   begin
+      if Trace_Config.Enabled then
+         Put_Line ("[trace]event " & Evt'Image & " in state " & From'Image);
+      end if;
+   end On_Event;
+
+   procedure On_Guard (Guard : Guard_Kind; Passed : Boolean) is
+   begin
+      if Trace_Config.Enabled then
+         Put_Line ("[trace]  guard " & Guard'Image & " => " & Passed'Image);
+      end if;
+   end On_Guard;
+
+   procedure On_Action (Action : Action_Kind; From, To : State) is
+   begin
+      if Trace_Config.Enabled then
+         Put_Line
+           ("[trace]  action "
+            & Action'Image
+            & "; "
+            & From'Image
+            & " -> "
+            & To'Image);
+      end if;
+   end On_Action;
+
+   procedure On_Unhandled (Evt : Event_Kind; From : State) is
+   begin
+      if Trace_Config.Enabled then
+         Put_Line ("[trace]  unhandled " & Evt'Image & " in " & From'Image);
+      end if;
+   end On_Unhandled;
+
    package SM is new
      Sml.Machines
-       (State       => State,
-        Event_Kind  => Event_Kind,
-        Event       => Event,
-        Context     => Context,
-        Guard_Kind  => Guard_Kind,
-        Action_Kind => Action_Kind,
-        Kind_Of     => Kind_Of,
-        Evaluate    => Evaluate,
-        Execute     => Execute);
+       (State        => State,
+        Event_Kind   => Event_Kind,
+        Event        => Event,
+        Context      => Context,
+        Guard_Kind   => Guard_Kind,
+        Action_Kind  => Action_Kind,
+        Kind_Of      => Kind_Of,
+        Evaluate     => Evaluate,
+        Execute      => Execute,
+        On_Event     => On_Event,
+        On_Guard     => On_Guard,
+        On_Action    => On_Action,
+        On_Unhandled => On_Unhandled);
 
    --  Opt in to the operators, naming the "always" guard and "do nothing"
    --  action used by rows that omit them.
@@ -112,4 +153,4 @@ begin
    Process_Event (M, Ctx, (Kind => E_Fin, Id => 42, Fin_Valid => True));
    Process_Event (M, Ctx, (Kind => E_Timeout));
    Put_Line ("final: " & State_Of (M)'Image);
-end Hello_World;
+end Hello_World_With_Tracing;

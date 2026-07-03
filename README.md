@@ -294,12 +294,12 @@ package SM is new Sml.Machines (..., On_Event => On_Event, ...);
 ```
 
 Because the hook is a real procedure, *you* decide the format, where it goes,
-and when it's active — gating on a static `Boolean` (as the example does)
-folds disabled tracing away to nothing even at `-O0`. Build the example with
-tracing on to see it:
+and when it's active — gating on a static `Boolean` (as `hello_world_with_tracing`
+does) folds disabled tracing away to nothing even at `-O0`. The plain
+`hello_world` omits the hooks entirely; build the traced variant to see them:
 
 ```console
-$ alr exec -- gprbuild -XTRACE=on -P example/example.gpr && ./example/bin/hello_world
+$ alr exec -- gprbuild -XTRACE=on -P example/example.gpr && ./example/bin/hello_world_with_tracing
 start: ESTABLISHED
 [trace]event E_RELEASE in state ESTABLISHED
 [trace]  guard ALWAYS => TRUE
