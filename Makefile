@@ -21,9 +21,13 @@ test:
 prove:
 	alr exec -- gnatprove -P proof/proof.gpr -j0 --level=2 --checks-as-errors=on
 
-## format      Check source formatting
+## format      Check formatting (per project, explicit files; no warnings)
 format:
-	alr exec -- gnatformat --check src/*.ad? tests/src/*.ad? example/src/*.ad? proof/src/*.ad?
+	alr exec -- gnatformat -P sml.gpr --check $$(git ls-files 'src/*.ad[sb]')
+	alr exec -- gnatformat -P tests/test_sml.gpr --check $$(git ls-files 'tests/src/*.ad[sb]')
+	alr exec -- gnatformat -P example/example.gpr --check $$(git ls-files 'example/src/*.ad[sb]' 'example/cfg/release/*.ad[sb]')
+	alr exec -- gnatformat -P example/example.gpr -XMODE=debug --check $$(git ls-files 'example/cfg/debug/*.ad[sb]')
+	alr exec -- gnatformat -P proof/proof.gpr --check $$(git ls-files 'proof/src/*.ad[sb]')
 
 ## example     Build the example both ways
 example: release debug
