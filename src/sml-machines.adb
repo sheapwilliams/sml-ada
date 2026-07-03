@@ -40,19 +40,20 @@ is
       Evt     : Event;
       Handled : out Boolean)
    is
-      K : constant Event_Kind := Kind_Of (Evt);
+      K   : constant Event_Kind := Kind_Of (Evt);
+      Cur : constant State := M.Current;
    begin
-      On_Event (K, M.Current);
+      On_Event (K, Cur);
 
       for T of M.Table loop
-         if T.From = M.Current and then T.On = K then
+         if T.From = Cur and then T.On = K then
             declare
                Pass : constant Boolean := Evaluate (T.Guard, Ctx, Evt);
             begin
                On_Guard (T.Guard, Pass);
 
                if Pass then
-                  On_Action (T.Action, M.Current, T.To);
+                  On_Action (T.Action, Cur, T.To);
                   Execute (T.Action, Ctx, Evt);
                   M.Current := T.To;
                   Handled := True;

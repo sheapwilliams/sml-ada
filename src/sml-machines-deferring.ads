@@ -45,8 +45,7 @@ private
       Len   : Count_Of := 0;
    end record;
 
-   Empty_Queue : constant Deferral_Queue :=
-     (Items => [others => Event_Kind'First], Len => 0);
+   Empty_Queue : constant Deferral_Queue := (others => <>);
 
    function Pending (Q : Deferral_Queue) return Natural
    is (Q.Len);
