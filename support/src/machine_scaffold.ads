@@ -45,4 +45,10 @@ package Machine_Scaffold with SPARK_Mode is
         Evaluate    => Evaluate,
         Execute     => Execute);
 
+   --  The state a freshly made machine reports -- its Initial, by Make's Post.
+   --  Lets each proof harness' Run collapse to a one-line pure function that
+   --  anchors that Post (the whole point of those Run functions).
+   function Started (Table : SM.Transition_Table; Initial : State) return State
+   is (SM.State_Of (SM.Make (Table, Initial)));
+
 end Machine_Scaffold;

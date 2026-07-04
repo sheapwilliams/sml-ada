@@ -13,10 +13,7 @@ is
       (Paused,  E_Stop,  Always, Nothing, Stopped)];
    --!format on
 
-   function Run return State is
-      M : constant Machine := Make (Table, Initial => Stopped);
-   begin
-      return State_Of (M);
-   end Run;
+   function Run return State
+   is (Started (Table, Stopped));
 
 end Deferring_Proof;

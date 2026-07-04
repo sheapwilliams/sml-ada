@@ -18,10 +18,7 @@ is
       (On,  E_Power, Always, Nothing, Off)];
    --!format on
 
-   function Run return State is
-      M : constant Machine := Make (Table, Initial => Off);
-   begin
-      return State_Of (M);
-   end Run;
+   function Run return State
+   is (Started (Table, Off));
 
 end Composite_Proof;

@@ -12,10 +12,7 @@ is
 
    --  RC.Run_To_Completion's body is proved through the instantiation; Run only
    --  anchors Make's Post, since Run_To_Completion could raise by design.
-   function Run return State is
-      M : constant Machine := Make (Table, Initial => Idle);
-   begin
-      return State_Of (M);
-   end Run;
+   function Run return State
+   is (Started (Table, Idle));
 
 end Reactive_Proof;

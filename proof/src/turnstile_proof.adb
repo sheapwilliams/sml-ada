@@ -13,15 +13,13 @@ is
       Unlocked + Push >= Locked];
    --!format on
 
-   --  Make's Post (State_Of (Make'Result) = Initial) chains to Run's result.
-   --  Process_Event's body is proved free of run-time errors by virtue of the
-   --  SM instantiation (gnatprove analyses the instance), so it need not be
-   --  called here -- and calling it would oblige Run, a function, to handle the
-   --  by-design Unhandled_Event (functions can't carry Exceptional_Cases).
-   function Run return State is
-      M : constant Machine := Make (Table, Initial => Locked);
-   begin
-      return State_Of (M);
-   end Run;
+   --  Started chains Make's Post (State_Of (Make'Result) = Initial) to Run's
+   --  result.  Process_Event's body is proved free of run-time errors by
+   --  virtue of the SM instantiation (gnatprove analyses the instance), so it
+   --  need not be called here -- and calling it would oblige Run, a function,
+   --  to handle the by-design Unhandled_Event (functions can't carry
+   --  Exceptional_Cases).
+   function Run return State
+   is (Started (Table, Locked));
 
 end Turnstile_Proof;
