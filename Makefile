@@ -5,7 +5,7 @@
 
 EX := -P example/example.gpr
 
-.PHONY: all build test prove format example release debug run run-trace clean help
+.PHONY: all build test prove format example release debug run run-trace run-named-trace clean help
 
 all: build
 
@@ -50,6 +50,10 @@ run: release
 ## run-trace   Build and run the debug hello_world_with_tracing
 run-trace: debug
 	./example/bin/debug/hello_world_with_tracing
+
+## run-named-trace  Build and run the debug named_tracing (Sml.Tracing)
+run-named-trace: debug
+	./example/bin/debug/named_tracing
 
 ## clean       Remove all build artifacts
 clean:
