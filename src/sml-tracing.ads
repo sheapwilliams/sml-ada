@@ -26,9 +26,11 @@
 --  A composed line spans two hooks (the event from On_Event, the endpoints
 --  from On_Action), so the instance holds the in-progress line between them.
 --  That state makes one instance good for one machine driven from one task at
---  a time -- the usual run-to-completion model.  It is deliberately outside
---  SPARK_Mode (it keeps mutable state and does I/O); the engine it traces is
---  unaffected and stays fully provable.
+--  a time -- the usual run-to-completion model.  It is a bounded buffer (the
+--  Trace_State abstraction, no heap), keeping the tracer inside SPARK: a
+--  guard note that would overflow Notes_Capacity is dropped from the line,
+--  though a blocked guard still reports as blocked, never as unhandled.  The
+--  hooks are proved free of run-time errors via the instance in Tracing_Proof.
 
 with Ada.Text_IO;
 
@@ -42,8 +44,14 @@ generic
    --  traced line so only meaningful guards and actions show.
    Always : Guard_Kind;
    Nothing : Action_Kind;
+   --  Room for one line's guard notes; a note that would not fit is dropped.
+   Notes_Capacity : Positive := 128;
    with procedure Put_Line (Item : String) is Ada.Text_IO.Put_Line;
-package Sml.Tracing is
+package Sml.Tracing with
+    SPARK_Mode,
+    Abstract_State => Trace_State,
+    Initializes    => Trace_State
+is
 
    procedure On_Event (Evt : Event_Kind; From : State);
    procedure On_Guard (Guard : Guard_Kind; Passed : Boolean);

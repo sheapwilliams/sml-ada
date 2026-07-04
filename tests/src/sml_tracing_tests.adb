@@ -61,6 +61,20 @@ package body Sml_Tracing_Tests is
         Nothing     => Nothing,
         Put_Line    => Capture);
 
+   --  A second tracer with room for no note at all, pinning the bounded
+   --  buffer's saturation: the note text is dropped, the diagnosis is not.
+   package Tiny is new
+     Sml.Tracing
+       (State          => St,
+        Event_Kind     => Ev,
+        Guard_Kind     => G,
+        Action_Kind    => A,
+        Name           => "TINY",
+        Always         => Always,
+        Nothing        => Nothing,
+        Notes_Capacity => 4,
+        Put_Line       => Capture);
+
    package SM is new
      Sml.Machines
        (State        => St,
@@ -147,6 +161,48 @@ package body Sml_Tracing_Tests is
          "no matching row traces as unhandled -- got: " & To_String (Log));
    end Test_Unhandled;
 
+   procedure Test_Note_Overflow_Dropped
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+   begin
+      Log := Null_Unbounded_String;
+      --  Drive the hooks directly, in the order the engine calls them for a
+      --  guard-blocked event.
+      Tiny.On_Event (E_Refresh_Ok, Refreshing);
+      Tiny.On_Guard (Token_Valid, False);
+      Tiny.On_Unhandled (E_Refresh_Ok, Refreshing);
+      Assert
+        (Logged
+           ("sml<TINY>: REFRESHING + E_REFRESH_OK"
+            & " -- blocked by guard (no transition)"),
+         "an over-capacity note is dropped, the blocked wording kept"
+         & " -- got: "
+         & To_String (Log));
+      Assert
+        (not Logged ("TOKEN_VALID"),
+         "the dropped note leaves no partial text");
+   end Test_Note_Overflow_Dropped;
+
+   procedure Test_Multiple_Guard_Notes
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+   begin
+      Log := Null_Unbounded_String;
+      Trace.On_Event (E_Refresh_Ok, Refreshing);
+      Trace.On_Guard (Token_Valid, False);
+      Trace.On_Guard (Token_Valid, False);
+      Trace.On_Unhandled (E_Refresh_Ok, Refreshing);
+      Assert
+        (Logged
+           ("sml<AUTH>: REFRESHING + E_REFRESH_OK"
+            & " (TOKEN_VALID=False) (TOKEN_VALID=False)"
+            & " -- blocked by guard (no transition)"),
+         "each failing guard's verdict lands in the one line -- got: "
+         & To_String (Log));
+   end Test_Multiple_Guard_Notes;
+
    procedure Register_Tests (T : in out Test) is
    begin
       Register_Routine
@@ -163,6 +219,14 @@ package body Sml_Tracing_Tests is
          "Guard-blocked event traces the false guard and no move");
       Register_Routine
         (T, Test_Unhandled'Access, "Unhandled event traces as no transition");
+      Register_Routine
+        (T,
+         Test_Note_Overflow_Dropped'Access,
+         "A note past Notes_Capacity is dropped; blocked wording kept");
+      Register_Routine
+        (T,
+         Test_Multiple_Guard_Notes'Access,
+         "Multiple guard verdicts accumulate in one line");
    end Register_Tests;
 
    overriding
