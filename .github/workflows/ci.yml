@@ -36,10 +36,12 @@ jobs:
         # The profile is persisted in config/ and inherited by later steps.
         run: alr --non-interactive build --validation
 
-      - name: Run the test suite
-        # `alr test` builds tests/test_sml.gpr and runs the AUnit runner,
-        # which exits non-zero on any failed assertion.  The suite instantiates
-        # the machine both with and without tracing, so both compile here too.
+      - name: Run the test suite (debug -O0 and release -O3)
+        # `alr test` builds tests/test_sml.gpr and runs the AUnit runner, which
+        # exits non-zero on any failed assertion.  It builds and runs the suite
+        # in both optimization modes (debug -O0, release -O3), so the generic
+        # engine is exercised at each -O level.  The suite also instantiates the
+        # machine both with and without tracing, so both compile here too.
         run: alr --non-interactive test
 
       - name: Build & run the release example (-O3, no tracing)

@@ -6,16 +6,33 @@ with "../sml.gpr";
 --  test plus the AUnit framework that Alire provides as a dependency.
 project Test_Sml is
 
+   --  MODE selects the optimization level, mirroring example.gpr:
+   --    release  -O3
+   --    debug    -O0
+   --  The engine is generic and so is compiled at each instantiation site in
+   --  the test/support code, so running the suite under both modes exercises
+   --  the engine at -O3 and -O0.  Per-mode object and exec dirs keep the two
+   --  builds from reusing each other's stale artifacts.
+   type Mode_Type is ("release", "debug");
+   Mode : Mode_Type := external ("MODE", "debug");
+
    for Source_Dirs use ("src", "../support/src");
-   for Object_Dir use "obj";
-   for Exec_Dir use "bin";
+   for Object_Dir use "obj/" & Mode;
+   for Exec_Dir use "bin/" & Mode;
    for Main use ("test_runner.adb");
 
    package Compiler is
-      for Default_Switches ("Ada") use
-        ("-g", "-gnata", "-gnatwa", "-gnatwe", "-gnat2022");
       --  -gnata keeps the library's pre/postconditions enabled while testing;
       --  -gnatwe holds the test code itself to warnings-as-errors.
+      Common := ("-g", "-gnata", "-gnatwa", "-gnatwe", "-gnat2022");
+
+      case Mode is
+         when "release" =>
+            for Default_Switches ("Ada") use Common & ("-O3");
+
+         when "debug" =>
+            for Default_Switches ("Ada") use Common & ("-O0");
+      end case;
    end Compiler;
 
    package Binder is

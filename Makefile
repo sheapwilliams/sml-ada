@@ -13,10 +13,12 @@ all: build
 build:
 	alr build
 
-## test        Build and run the AUnit suite (per-test output)
+## test        Build and run the AUnit suite in both modes (per-test output)
 test:
-	alr exec -- gprbuild -p -j0 -P tests/test_sml.gpr
-	alr exec -- tests/bin/test_runner
+	alr exec -- gprbuild -p -j0 -XMODE=debug -P tests/test_sml.gpr
+	alr exec -- tests/bin/debug/test_runner
+	alr exec -- gprbuild -p -j0 -XMODE=release -P tests/test_sml.gpr
+	alr exec -- tests/bin/release/test_runner
 
 ## prove       Run the SPARK proof (same flags as CI)
 prove:

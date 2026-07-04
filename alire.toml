@@ -18,13 +18,23 @@ aunit = "^26.0.0"
 "*".ada_version = "Ada2022"
 
 #  `alr test` runs actions with an empty GPR_PROJECT_PATH, so each wraps its
-#  command in `alr exec --` to pick up the toolchain and AUnit.  Two argv-only
+#  command in `alr exec --` to pick up the toolchain and AUnit.  Argv-only
 #  actions (no `sh -c`, no `&&`) so this runs on Windows too; the runner exits
-#  non-zero on any failing assertion, so a failure fails the job.
+#  non-zero on any failing assertion, so a failure fails the job.  The suite is
+#  built and run in both optimization modes (debug -O0, release -O3) so the
+#  engine is exercised at each -O level.
 [[actions]]
 type = "test"
-command = ["alr", "exec", "--", "gprbuild", "-p", "-P", "tests/test_sml.gpr"]
+command = ["alr", "exec", "--", "gprbuild", "-p", "-XMODE=debug", "-P", "tests/test_sml.gpr"]
 
 [[actions]]
 type = "test"
-command = ["alr", "exec", "--", "tests/bin/test_runner"]
+command = ["alr", "exec", "--", "tests/bin/debug/test_runner"]
+
+[[actions]]
+type = "test"
+command = ["alr", "exec", "--", "gprbuild", "-p", "-XMODE=release", "-P", "tests/test_sml.gpr"]
+
+[[actions]]
+type = "test"
+command = ["alr", "exec", "--", "tests/bin/release/test_runner"]

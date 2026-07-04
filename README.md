@@ -358,7 +358,7 @@ command, and `make help` lists them all:
 
 ```console
 make build     # build the library
-make test      # build + run the AUnit suite
+make test      # build + run the AUnit suite (both -O0 and -O3)
 make prove     # run the SPARK proof
 make run       # build the example (release: -O3, no tracing) and run hello_world
 make format    # check formatting
