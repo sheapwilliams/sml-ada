@@ -48,6 +48,12 @@ package Sml.Machines with SPARK_Mode is
 
    function State_Of (M : Machine) return State;
 
+   --  True when Table has a transition for every (State, Event_Kind) pair --
+   --  the property Make enforces when Complete => Total.  Pure, so a caller
+   --  can ask up front without building a Machine and catching
+   --  Incomplete_Table.
+   function Is_Total (Table : Transition_Table) return Boolean;
+
    function Make
      (Table        : Transition_Table;
       Initial      : State;

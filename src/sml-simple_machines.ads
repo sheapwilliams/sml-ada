@@ -65,6 +65,9 @@ package Sml.Simple_Machines with SPARK_Mode is
 
    function State_Of (M : Machine) return State renames Engine.State_Of;
 
+   function Is_Total (Table : Transition_Table) return Boolean
+   renames Engine.Is_Total;
+
    function Make
      (Table        : Transition_Table;
       Initial      : State;

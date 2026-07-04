@@ -10,6 +10,14 @@ package body Sml.Tracing is
 
    Prefix : constant String := "sml<" & Name & ">: ";
 
+   --  The shared skeleton of every traced line: the named machine, the source
+   --  state, the event, and the guard notes gathered for it.  Tail carries
+   --  what distinguishes a fired transition from a blocked/unhandled one.
+   function Line
+     (From : State; Event : Event_Kind; Notes : String; Tail : String)
+      return String
+   is (Prefix & From'Image & " + " & Event'Image & Notes & Tail);
+
    procedure On_Event (Evt : Event_Kind; From : State) is
       pragma Unreferenced (From);
    begin
@@ -34,27 +42,25 @@ package body Sml.Tracing is
    procedure On_Action (Action : Action_Kind; From, To : State) is
    begin
       Put_Line
-        (Prefix
-         & From'Image
-         & " + "
-         & Last_Event'Image
-         & To_String (Guards)
-         & (if Action = Nothing then "" else " / " & Action'Image)
-         & " --> "
-         & To'Image);
+        (Line
+           (From,
+            Last_Event,
+            To_String (Guards),
+            (if Action = Nothing then "" else " / " & Action'Image)
+            & " --> "
+            & To'Image));
    end On_Action;
 
    procedure On_Unhandled (Evt : Event_Kind; From : State) is
    begin
       Put_Line
-        (Prefix
-         & From'Image
-         & " + "
-         & Evt'Image
-         & To_String (Guards)
-         & (if Length (Guards) = 0
-            then " -- unhandled (no transition)"
-            else " -- blocked by guard (no transition)"));
+        (Line
+           (From,
+            Evt,
+            To_String (Guards),
+            (if Length (Guards) = 0
+             then " -- unhandled (no transition)"
+             else " -- blocked by guard (no transition)")));
    end On_Unhandled;
 
 end Sml.Tracing;

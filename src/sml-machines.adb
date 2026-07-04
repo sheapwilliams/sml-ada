@@ -2,6 +2,22 @@ package body Sml.Machines
   with SPARK_Mode
 is
 
+   --  A transition's source: the (From, On) pair a fired event must match.
+   --  The one predicate behind both dispatch (Process_Event) and coverage
+   --  (Is_Total / Make's Total check).
+   function Matches
+     (T : Transition; From : State; K : Event_Kind) return Boolean
+   is (T.From = From and then T.On = K);
+
+   --  Does Table have any row for the (S, K) pair?
+   function Covers
+     (Table : Transition_Table; S : State; K : Event_Kind) return Boolean
+   is (for some T of Table => Matches (T, S, K));
+
+   function Is_Total (Table : Transition_Table) return Boolean
+   is (for all S in State =>
+         (for all K in Event_Kind => Covers (Table, S, K)));
+
    --  Excluded from proof: the Total-completeness check raises
    --  Incomplete_Table by design.  Make's Post (State_Of (Make'Result) =
    --  Initial) is the contract gnatprove assumes for callers; Process_Event
@@ -16,24 +32,14 @@ is
    is
    begin
       if Complete = Total then
-         declare
-            Covered : array (State, Event_Kind) of Boolean :=
-              [others => [others => False]];
-         begin
-            for T of Table loop
-               Covered (T.From, T.On) := True;
+         for S in State loop
+            for K in Event_Kind loop
+               if not Covers (Table, S, K) then
+                  raise Incomplete_Table
+                    with "missing transition: " & S'Image & " on " & K'Image;
+               end if;
             end loop;
-
-            for S in State loop
-               for K in Event_Kind loop
-                  if not Covered (S, K) then
-                     raise Incomplete_Table
-                       with
-                         "missing transition: " & S'Image & " on " & K'Image;
-                  end if;
-               end loop;
-            end loop;
-         end;
+         end loop;
       end if;
 
       return
@@ -56,7 +62,7 @@ is
       On_Event (K, Cur);
 
       for T of M.Table loop
-         if T.From = Cur and then T.On = K then
+         if Matches (T, Cur, K) then
             declare
                Pass : constant Boolean := Evaluate (T.Guard, Ctx, Evt);
             begin

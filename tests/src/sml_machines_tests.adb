@@ -65,6 +65,19 @@ package body Sml_Machines_Tests is
      [(Idle, Go,   Always,    Nothing, Busy),
       (Busy, Step, Below_Cap, Add,     Busy),
       (Busy, Stop, Always,    Nothing, Done)];
+
+   --  Every (State, Event_Kind) pair covered -- the Total shape, shared by the
+   --  completeness and Is_Total tests below.
+   Full : constant Transition_Table :=
+     [(Idle, Go,   Always, Nothing, Busy),
+      (Idle, Step, Always, Nothing, Idle),
+      (Idle, Stop, Always, Nothing, Idle),
+      (Busy, Go,   Always, Nothing, Busy),
+      (Busy, Step, Always, Nothing, Busy),
+      (Busy, Stop, Always, Nothing, Done),
+      (Done, Go,   Always, Nothing, Done),
+      (Done, Step, Always, Nothing, Done),
+      (Done, Stop, Always, Nothing, Done)];
    --!format on
 
    --  A second instance whose structured logging hooks capture into Log,
@@ -196,24 +209,22 @@ package body Sml_Machines_Tests is
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
-      --!format off
-      Full : constant Transition_Table :=
-        [(Idle, Go,   Always, Nothing, Busy),
-         (Idle, Step, Always, Nothing, Idle),
-         (Idle, Stop, Always, Nothing, Idle),
-         (Busy, Go,   Always, Nothing, Busy),
-         (Busy, Step, Always, Nothing, Busy),
-         (Busy, Stop, Always, Nothing, Done),
-         (Done, Go,   Always, Nothing, Done),
-         (Done, Step, Always, Nothing, Done),
-         (Done, Stop, Always, Nothing, Done)];
-      --!format on
-      Mac  : Machine := Make (Full, Initial => Idle, Complete => Total);
-      C    : Ctx_T;
+      Mac : Machine := Make (Full, Initial => Idle, Complete => Total);
+      C   : Ctx_T;
    begin
       Process_Event (Mac, C, (Kind => Go));
       Assert (State_Of (Mac) = Busy, "complete table is accepted and runs");
    end Test_Complete_Table_Accepted;
+
+   procedure Test_Is_Total_Query (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+   begin
+      Assert
+        (not Is_Total (Table),
+         "the sparse table is reported as not total, no Machine needed");
+      Assert (Is_Total (Full), "the full table is reported as total");
+   end Test_Is_Total_Query;
 
    procedure Test_Logging (T : in out AUnit.Test_Cases.Test_Case'Class) is
       pragma Unreferenced (T);
@@ -259,6 +270,10 @@ package body Sml_Machines_Tests is
         (T,
          Test_Complete_Table_Accepted'Access,
          "Total completeness accepts a full table");
+      Register_Routine
+        (T,
+         Test_Is_Total_Query'Access,
+         "Is_Total queries table completeness without constructing a Machine");
       Register_Routine
         (T,
          Test_Logging'Access,
