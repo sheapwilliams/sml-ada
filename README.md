@@ -312,12 +312,31 @@ final: CLOSED
 
 ### Formal verification (SPARK)
 
-The engine is written in the SPARK subset. `proof/` instantiates the engine and
-its operators for a turnstile and `gnatprove` verifies it: `Process_Event` is proved free of
-run-time errors, and `Make`'s contract (`State_Of (Make'Result) = Initial`)
-holds (`gnatprove` only analyses a generic through a concrete instance). `Make`'s
-body is excluded from proof because its `Total`-completeness check raises
-`Incomplete_Table` by design — that raise is part of its contract for callers.
+The engine and every layer are written in the SPARK subset; `proof/`
+instantiates them for concrete machines and
+`gnatprove --level=2 --checks-as-errors=on` discharges every check — absence of
+run-time errors **and** functional contracts. What is proved:
+
+- **`Make`** is fully in SPARK and pins the constructed machine (initial state,
+  table, policy, default). A `Total` table that isn't complete is a precondition
+  violation for SPARK callers, and still raises `Incomplete_Table` at run time
+  for everyone else.
+- **`Process_Event`** never *teleports* (a handled event only moves along a
+  declared row), raises `Unhandled_Event` **only** under the `Raise_Error`
+  policy (so under `Stay`/`Go_To_Default` it provably cannot raise), and is
+  *complete* — an enabled transition is never missed — which makes **exact**
+  results provable, e.g. `Coin` in `Locked` yields `Unlocked` (given the guard's
+  own contract).
+- **The layers** preserve a machine's configuration (`Reactive`, `Composite`,
+  `Regions`, `Bundled`); `Deferring`'s queue is bounded (`Pending <= Capacity`,
+  at most one enqueue per call, overflow only when already full); `Tracing`'s
+  note buffer stays within capacity.
+
+**Not** proved: a *precise* raise trigger on the layers that raise by
+*propagation* (`Reactive`, `Composite`, `Regions`, `Bundled`) — this SPARK
+version havocs the machine on a propagated exception, so those keep
+`Exceptional_Cases => True`. Only the *directly* raising routines (the engine's
+`Process_Event` and `Deferring.Post`) carry the exact trigger.
 
 ## Generating a specialized machine (not shipped)
 
