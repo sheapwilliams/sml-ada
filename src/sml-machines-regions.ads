@@ -22,7 +22,15 @@ package Sml.Machines.Regions with SPARK_Mode is
    --  Feed one event to every region, in order, against the shared Context.
    procedure Broadcast
      (Regions : in out Region_Array; Ctx : in out Context; Evt : Event)
-   with Exceptional_Cases => (Unhandled_Event => True);
+   with
+     Post              =>
+       (for all I in Regions'Range =>
+          Table_Of (Regions (I)) = Table_Of (Regions'Old (I))
+          and then Policy_Of (Regions (I)) = Policy_Of (Regions'Old (I))
+          and then Default_Of (Regions (I)) = Default_Of (Regions'Old (I))),
+     --  Precise trigger inexpressible: Broadcast propagates Unhandled_Event
+     --  from a region's Process_Event (see the Reactive note).
+     Exceptional_Cases => (Unhandled_Event => True);
 
    --  True when every region is in state S (vacuously true for none).
    function All_In (Regions : Region_Array; S : State) return Boolean
