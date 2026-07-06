@@ -22,4 +22,14 @@ is
    function Run return State
    with Post => Run'Result = Locked;
 
+   --  Push is unhandled in Locked, so the Stay policy leaves the turnstile put.
+   function Push_In_Locked return State
+   with Post => Push_In_Locked'Result = Locked;
+
+   --  An *exact* result, provable via the 4-arg Process_Event's Handled-
+   --  completeness: Coin is enabled in Locked (Always holds), so it must be
+   --  handled, and the one matching row goes to Unlocked.
+   function Coin_In_Locked return State
+   with Post => Coin_In_Locked'Result = Unlocked;
+
 end Turnstile_Proof;

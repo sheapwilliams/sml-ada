@@ -22,4 +22,37 @@ is
    function Run return State
    is (Started (Table, Locked));
 
+   function Push_In_Locked return State is
+      M : Machine := Make (Table, Initial => Locked);
+      C : Context;
+      pragma
+        Warnings
+          (GNATprove,
+           Off,
+           "* set by ""Process_Event"" but not used after the call",
+           Reason =>
+             "the turnstile's Context is a null record, irrelevant here");
+   begin
+      Process_Event
+        (M, C, (Kind => E_Push));   --  3-arg: unhandled, Stay => put
+      return State_Of (M);
+   end Push_In_Locked;
+
+   function Coin_In_Locked return State is
+      M       : Machine := Make (Table, Initial => Locked);
+      C       : Context;
+      Handled : Boolean;
+      pragma
+        Warnings
+          (GNATprove,
+           Off,
+           "* set by ""Process_Event"" but not used after the call",
+           Reason =>
+             "neither the null-record Context nor Handled is read here");
+   begin
+      Process_Event (M, C, (Kind => E_Coin), Handled);
+      --  4-arg: completeness forces Handled
+      return State_Of (M);
+   end Coin_In_Locked;
+
 end Turnstile_Proof;

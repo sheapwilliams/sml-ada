@@ -28,7 +28,8 @@ package Machine_Scaffold with SPARK_Mode is
    is ((Kind => E));
 
    function Evaluate
-     (G : Guard_Kind; Ctx : Context; Evt : Event) return Boolean;
+     (G : Guard_Kind; Ctx : Context; Evt : Event) return Boolean
+   with Post => Evaluate'Result;
 
    procedure Execute (A : Action_Kind; Ctx : in out Context; Evt : Event)
    is null;
