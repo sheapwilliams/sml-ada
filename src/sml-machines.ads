@@ -89,7 +89,19 @@ package Sml.Machines with SPARK_Mode is
 
    procedure Process_Event
      (M : in out Machine; Ctx : in out Context; Evt : Event)
-   with Exceptional_Cases => (Unhandled_Event => True);
+   with
+     Post              =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old)
+       and then (State_Of (M) = State_Of (M'Old)
+                 or else (for some T of Table_Of (M) =>
+                            T.From = State_Of (M'Old)
+                            and then T.On = Kind_Of (Evt)
+                            and then T.To = State_Of (M))
+                 or else (Policy_Of (M) = Go_To_Default
+                          and then State_Of (M) = Default_Of (M))),
+     Exceptional_Cases => (Unhandled_Event => Policy_Of (M'Old) = Raise_Error);
 
    --  Lower-level variant: fire the matching transition if its guard
    --  passes and report whether one did.  Applies NO unhandled policy and
