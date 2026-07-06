@@ -53,8 +53,17 @@ package Sml.Tracing with
     Initializes    => Trace_State
 is
 
-   procedure On_Event (Evt : Event_Kind; From : State);
-   procedure On_Guard (Guard : Guard_Kind; Passed : Boolean);
+   --  The fill level of the in-progress line's guard-note buffer, over the
+   --  abstract state.  Exposed as Ghost so the hooks can carry the buffer's
+   --  boundedness in their contracts (below); refined to Notes_Last in the
+   --  body.
+   function Notes_Used return Natural
+   with Ghost, Global => (Input => Trace_State);
+
+   procedure On_Event (Evt : Event_Kind; From : State)
+   with Post => Notes_Used = 0;
+   procedure On_Guard (Guard : Guard_Kind; Passed : Boolean)
+   with Post => Notes_Used <= Notes_Capacity;
    procedure On_Action (Action : Action_Kind; From, To : State);
    procedure On_Unhandled (Evt : Event_Kind; From : State);
 

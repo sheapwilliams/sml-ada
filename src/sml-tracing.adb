@@ -18,6 +18,9 @@ is
 
    Prefix : constant String := "sml<" & Name & ">: ";
 
+   function Notes_Used return Natural
+   is (Notes_Last);
+
    procedure On_Event (Evt : Event_Kind; From : State) is
       pragma Unreferenced (From);
    begin
