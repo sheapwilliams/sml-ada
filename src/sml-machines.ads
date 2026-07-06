@@ -100,7 +100,19 @@ package Sml.Machines with SPARK_Mode is
      (M       : in out Machine;
       Ctx     : in out Context;
       Evt     : Event;
-      Handled : out Boolean);
+      Handled : out Boolean)
+   with
+     Post =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old)
+       and then (if not Handled
+                 then State_Of (M) = State_Of (M'Old)
+                 else
+                   (for some T of Table_Of (M) =>
+                      T.From = State_Of (M'Old)
+                      and then T.On = Kind_Of (Evt)
+                      and then T.To = State_Of (M)));
 
 private
 
