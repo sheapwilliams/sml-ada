@@ -33,11 +33,31 @@ package Sml.Machines.Reactive with SPARK_Mode is
       Ctx    : in out Context;
       Evt    : Event;
       Result : out Completion)
-   with Exceptional_Cases => (Unhandled_Event => True);
+   with
+     Post              =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old),
+     --  Precise trigger (raises only under Raise_Error) is inexpressible here:
+     --  Run_To_Completion raises by propagation from Process_Event, and this
+     --  SPARK version havocs M on a propagated exception, so M'Old cannot be
+     --  referenced in the consequence ("M might not be initialized").  The
+     --  engine's Process_Event, which raises directly, does carry the trigger.
+     Exceptional_Cases => (Unhandled_Event => True);
 
    --  Convenience overload for callers that do not inspect the outcome.
    procedure Run_To_Completion
      (M : in out Machine; Ctx : in out Context; Evt : Event)
-   with Exceptional_Cases => (Unhandled_Event => True);
+   with
+     Post              =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old),
+     --  Precise trigger (raises only under Raise_Error) is inexpressible here:
+     --  Run_To_Completion raises by propagation from Process_Event, and this
+     --  SPARK version havocs M on a propagated exception, so M'Old cannot be
+     --  referenced in the consequence ("M might not be initialized").  The
+     --  engine's Process_Event, which raises directly, does carry the trigger.
+     Exceptional_Cases => (Unhandled_Event => True);
 
 end Sml.Machines.Reactive;

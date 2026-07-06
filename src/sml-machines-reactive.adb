@@ -11,6 +11,11 @@ is
       Process_Event (M, Ctx, Evt);
       Result := Settled;
       for Step in 1 .. Max_Steps loop
+         pragma
+           Loop_Invariant
+             (Table_Of (M) = Table_Of (M'Loop_Entry)
+                and then Policy_Of (M) = Policy_Of (M'Loop_Entry)
+                and then Default_Of (M) = Default_Of (M'Loop_Entry));
          declare
             S : constant State := State_Of (M);
          begin
