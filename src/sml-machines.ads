@@ -48,11 +48,29 @@ package Sml.Machines with SPARK_Mode is
 
    function State_Of (M : Machine) return State;
 
+   --  Ghost views of a Machine's fixed configuration (everything but Current),
+   --  so contracts can speak about the table, policy and default.  No run-time
+   --  cost -- absent outside proof.
+   function Table_Of (M : Machine) return Transition_Table
+   with Ghost;
+   function Policy_Of (M : Machine) return Unhandled_Policy
+   with Ghost;
+   function Default_Of (M : Machine) return State
+   with Ghost;
+
+   function Matches
+     (T : Transition; From : State; K : Event_Kind) return Boolean
+   is (T.From = From and then T.On = K);
+
+   function Covers
+     (Table : Transition_Table; S : State; K : Event_Kind) return Boolean
+   is (for some T of Table => Matches (T, S, K));
+
    --  True when Table has a transition for every (State, Event_Kind) pair --
-   --  the property Make enforces when Complete => Total.  Pure, so a caller
-   --  can ask up front without building a Machine and catching
-   --  Incomplete_Table.
-   function Is_Total (Table : Transition_Table) return Boolean;
+   --  the property Make enforces when Complete => Total.
+   function Is_Total (Table : Transition_Table) return Boolean
+   is (for all S in State =>
+         (for all K in Event_Kind => Covers (Table, S, K)));
 
    function Make
      (Table        : Transition_Table;
@@ -61,9 +79,13 @@ package Sml.Machines with SPARK_Mode is
       On_Unhandled : Unhandled_Policy := Stay;
       Default      : State := State'First) return Machine
    with
+     Pre  => (if Complete = Total then Is_Total (Table)),
      Post =>
        State_Of (Make'Result) = Initial
-       and then Make'Result.Count = Table'Length;
+       and then Make'Result.Count = Table'Length
+       and then Table_Of (Make'Result) = Table
+       and then Policy_Of (Make'Result) = On_Unhandled
+       and then Default_Of (Make'Result) = Default;
 
    procedure Process_Event
      (M : in out Machine; Ctx : in out Context; Evt : Event)
@@ -91,5 +113,12 @@ private
 
    function State_Of (M : Machine) return State
    is (M.Current);
+
+   function Table_Of (M : Machine) return Transition_Table
+   is (M.Table);
+   function Policy_Of (M : Machine) return Unhandled_Policy
+   is (M.On_Unhandled);
+   function Default_Of (M : Machine) return State
+   is (M.Default);
 
 end Sml.Machines;

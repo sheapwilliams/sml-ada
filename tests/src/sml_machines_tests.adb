@@ -1,3 +1,4 @@
+with Ada.Assertions;
 with Ada.Strings.Unbounded;
 with AUnit.Assertions; use AUnit.Assertions;
 
@@ -201,7 +202,9 @@ package body Sml_Machines_Tests is
          Assert (False, "Total should reject the sparse table");
       end;
    exception
-      when Incomplete_Table =>
+      --  Under -gnata the precondition rejects the sparse table before the
+      --  body's raise, so Assertion_Error may fire first.
+      when Ada.Assertions.Assertion_Error | Incomplete_Table =>
          null;
    end Test_Incomplete_Table_Detected;
 

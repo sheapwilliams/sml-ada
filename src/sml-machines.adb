@@ -2,34 +2,15 @@ package body Sml.Machines
   with SPARK_Mode
 is
 
-   --  A transition's source: the (From, On) pair a fired event must match.
-   --  The one predicate behind both dispatch (Process_Event) and coverage
-   --  (Is_Total / Make's Total check).
-   function Matches
-     (T : Transition; From : State; K : Event_Kind) return Boolean
-   is (T.From = From and then T.On = K);
-
-   --  Does Table have any row for the (S, K) pair?
-   function Covers
-     (Table : Transition_Table; S : State; K : Event_Kind) return Boolean
-   is (for some T of Table => Matches (T, S, K));
-
-   function Is_Total (Table : Transition_Table) return Boolean
-   is (for all S in State =>
-         (for all K in Event_Kind => Covers (Table, S, K)));
-
-   --  Excluded from proof: the Total-completeness check raises
-   --  Incomplete_Table by design.  Make's Post (State_Of (Make'Result) =
-   --  Initial) is the contract gnatprove assumes for callers; Process_Event
-   --  below is fully analysed.
+   --  The defensive Total check raises Incomplete_Table; Make's precondition
+   --  proves that raise unreachable for SPARK callers, while the check still
+   --  guards ordinary (non-SPARK) callers at run time.
    function Make
      (Table        : Transition_Table;
       Initial      : State;
       Complete     : Completeness := Partial;
       On_Unhandled : Unhandled_Policy := Stay;
-      Default      : State := State'First) return Machine
-   with SPARK_Mode => Off
-   is
+      Default      : State := State'First) return Machine is
    begin
       if Complete = Total then
          for S in State loop

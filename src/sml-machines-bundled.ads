@@ -30,7 +30,9 @@ package Sml.Machines.Bundled with SPARK_Mode is
       Complete     : Completeness := Partial;
       On_Unhandled : Unhandled_Policy := Stay;
       Default      : State := State'First) return Instance
-   with Post => State_Of (Make'Result) = Initial;
+   with
+     Pre  => (if Complete = Total then Is_Total (Table)),
+     Post => State_Of (Make'Result) = Initial;
 
    --  Deliver Evt to the bundled machine against its own Context.
    procedure Process_Event (Self : in out Instance; Evt : Event)
