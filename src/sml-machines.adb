@@ -42,24 +42,35 @@ is
    begin
       On_Event (K, Cur);
 
-      for T of M.Table loop
-         if Matches (T, Cur, K) then
-            declare
-               Pass : constant Boolean := Evaluate (T.Guard, Ctx, Evt);
-            begin
-               On_Guard (T.Guard, Pass);
-
-               if Pass then
-                  On_Action (T.Action, Cur, T.To);
-                  Execute (T.Action, Ctx, Evt);
-                  M.Current := T.To;
-                  Handled := True;
-                  return;
-               end if;
-            end;
-         end if;
+      for I in M.Table'Range loop
+         --  Nothing before a fired transition touches Current or Ctx, so every
+         --  matching guard tried so far failed (or we'd have returned), which
+         --  discharges the "not Handled => nothing was enabled" postcondition.
+         pragma Loop_Invariant (M.Current = Cur);
+         pragma
+           Loop_Invariant
+             (for all J in M.Table'First .. I - 1 =>
+                (if Matches (M.Table (J), Cur, K)
+                 then not Evaluate (M.Table (J).Guard, Ctx, Evt)));
+         declare
+            T : Transition renames M.Table (I);
+         begin
+            if Matches (T, Cur, K) then
+               declare
+                  Pass : constant Boolean := Evaluate (T.Guard, Ctx, Evt);
+               begin
+                  On_Guard (T.Guard, Pass);
+                  if Pass then
+                     On_Action (T.Action, Cur, T.To);
+                     Execute (T.Action, Ctx, Evt);
+                     M.Current := T.To;
+                     Handled := True;
+                     return;
+                  end if;
+               end;
+            end if;
+         end;
       end loop;
-
       Handled := False;
    end Process_Event;
 

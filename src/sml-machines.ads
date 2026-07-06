@@ -119,11 +119,14 @@ package Sml.Machines with SPARK_Mode is
        and then Policy_Of (M) = Policy_Of (M'Old)
        and then Default_Of (M) = Default_Of (M'Old)
        and then (if not Handled
-                 then State_Of (M) = State_Of (M'Old)
+                 then
+                   State_Of (M) = State_Of (M'Old)
+                   and then (for all T of Table_Of (M) =>
+                               (if Matches (T, State_Of (M'Old), Kind_Of (Evt))
+                                then not Evaluate (T.Guard, Ctx, Evt)))
                  else
                    (for some T of Table_Of (M) =>
-                      T.From = State_Of (M'Old)
-                      and then T.On = Kind_Of (Evt)
+                      Matches (T, State_Of (M'Old), Kind_Of (Evt))
                       and then T.To = State_Of (M)));
 
 private
