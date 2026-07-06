@@ -23,7 +23,8 @@ package Sml.Machines.Deferring with SPARK_Mode is
    type Deferral_Queue is private;
    Empty_Queue : constant Deferral_Queue;
 
-   function Pending (Q : Deferral_Queue) return Natural;
+   function Pending (Q : Deferral_Queue) return Natural
+   with Post => Pending'Result <= Capacity;
 
    --  Process Evt; if it was handled, re-deliver the queue (handled deferrals
    --  drop out); if it was unhandled and Deferred there, queue it (raising
@@ -33,7 +34,13 @@ package Sml.Machines.Deferring with SPARK_Mode is
       Q   : in out Deferral_Queue;
       Ctx : in out Context;
       Evt : Event)
-   with Exceptional_Cases => (Deferral_Overflow => True);
+   with
+     Post              =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old)
+       and then Pending (Q) <= Pending (Q'Old) + 1,
+     Exceptional_Cases => (Deferral_Overflow => Pending (Q'Old) = Capacity);
 
 private
 

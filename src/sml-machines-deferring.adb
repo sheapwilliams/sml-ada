@@ -11,15 +11,33 @@ is
    --  in place; the inner invariant keeps the write index (New_Len) behind the
    --  read index (I), so each slot is read before it can be overwritten.
    procedure Drain
-     (M : in out Machine; Q : in out Deferral_Queue; Ctx : in out Context) is
+     (M : in out Machine; Q : in out Deferral_Queue; Ctx : in out Context)
+   with
+     Post =>
+       Table_Of (M) = Table_Of (M'Old)
+       and then Policy_Of (M) = Policy_Of (M'Old)
+       and then Default_Of (M) = Default_Of (M'Old)
+       and then Pending (Q) <= Pending (Q'Old)
+   is
    begin
       for Pass in 1 .. Capacity loop
+         pragma
+           Loop_Invariant
+             (Table_Of (M) = Table_Of (M'Loop_Entry)
+                and then Policy_Of (M) = Policy_Of (M'Loop_Entry)
+                and then Default_Of (M) = Default_Of (M'Loop_Entry)
+                and then Q.Len <= Q.Len'Loop_Entry);
          declare
             Old_Len : constant Count_Of := Q.Len;
             New_Len : Count_Of := 0;
          begin
             for I in 1 .. Old_Len loop
                pragma Loop_Invariant (New_Len < I);
+               pragma
+                 Loop_Invariant
+                   (Table_Of (M) = Table_Of (M'Loop_Entry)
+                      and then Policy_Of (M) = Policy_Of (M'Loop_Entry)
+                      and then Default_Of (M) = Default_Of (M'Loop_Entry));
                declare
                   K       : constant Event_Kind := Q.Items (I);
                   Handled : Boolean;
